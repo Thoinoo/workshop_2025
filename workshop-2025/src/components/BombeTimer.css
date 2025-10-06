@@ -1,0 +1,82 @@
+body {
+    font-family: 'Nunito', sans-serif;
+    text-align: center;
+    margin-top: 50px;
+    color: white;
+  
+    /* Image de fond */
+    background-image: url("../images/fond_frame.png");
+    background-size: cover;       /* L’image couvre toute la page */
+    background-position: center;  /* Centrée */
+    background-attachment: fixed; /* L’image reste fixe quand on scrolle */
+    margin: 0;
+    padding: 0;
+  }
+  
+  input {
+    padding: 8px;
+    font-size: 16px;
+  }
+  
+  button {
+    padding: 8px 15px;
+    font-size: 16px;
+  
+    /* Police Nunito et texte en gras */
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;  /* gras */
+  
+    /* Couleurs */
+    background-color: white;
+    color: #0d6583;
+  
+    /* Bordure et coins arrondis */
+    border: 2px solid #0d6583;
+    border-radius: 5px;
+  
+    /* Curseur et transition */
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  /* Effet au survol */
+  button:hover {
+    background-color: #0d6583;
+    color: white;
+  }
+  
+  p {
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  
+  /* Style pour la barre de saisie */
+  input[type="text"] {
+    padding: 8px 15px;
+    font-size: 16px;
+  
+    /* Police Nunito et texte en gras */
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+  
+    /* Couleurs */
+    background-color: white;
+    color: #0d6583;
+    border: 2px solid #0d6583;
+    border-radius: 5px;
+  
+    /* Taille et espacement */
+    width: 250px;
+    box-sizing: border-box;
+  
+    /* Transition pour effet au focus */
+    transition: all 0.3s;
+  }
+  
+  /* Effet quand on clique dans la barre */
+  input[type="text"]:focus {
+    outline: none;               /* supprime le contour par défaut */
+    border-color: #0d6583;       /* bordure bleu un peu plus foncé */
+    box-shadow: 0 0 5px #0d6583; /* léger halo */
+  }
+  

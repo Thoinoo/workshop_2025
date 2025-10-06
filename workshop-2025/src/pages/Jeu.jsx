@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
-import Timer from "../components/Timer";
 import socket from "../socket";
 import "./lobby.css";
+import BombeTimer from "../components/BombeTimer";
 
 export default function Jeu() {
   const navigate = useNavigate();
@@ -70,9 +70,12 @@ export default function Jeu() {
           <p className="game-room">Salle {room}</p>
           {username && <p className="game-username">Connecté en tant que <strong>{username}</strong></p>}
         </div>
-        <Timer />
+        <BombeTimer startSeconds={600} />
         <button className="game-primary" onClick={() => navigate("/enigme1")}>
           Accéder à l'énigme 1
+        </button>
+        <button className="game-primary" onClick={() => navigate("/enigme3")}>
+          Accéder à l'énigme 3
         </button>
       </header>
 

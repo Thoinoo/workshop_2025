@@ -6,7 +6,8 @@ import socket from "../socket";
 import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 
-export default function Enigme1() {
+
+export default function Enigme3() {
   const navigate = useNavigate();
   const username = sessionStorage.getItem("pseudo");
   const room = sessionStorage.getItem("room");
@@ -78,29 +79,40 @@ export default function Enigme1() {
             )}
           </p>
         </div>
-
         <BombeTimer startSeconds={600} />
-
         <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
       </header>
 
       <div className="game-layout">
-        <section className="game-card puzzle-content">
-          <h2>Énigme 1 🔍</h2>
-          <p>
-            Observez attentivement les éléments fournis par votre maître du jeu. Chaque détail
-            compte et l'échange d'idées avec votre équipe sera déterminant.
-          </p>
+      <section className="game-card puzzle-content">
 
-          <div className="puzzle-instructions">
-            <h3>Briefing</h3>
-            <ul>
-              <li>Partagez vos découvertes dans le chat pour faire progresser l'équipe.</li>
-              <li>Notez les indices importants et confrontez vos hypothèses.</li>
-              <li>Lorsque vous êtes prêts, contactez le maître du jeu pour valider votre réponse.</li>
-            </ul>
-          </div>
-        </section>
+  <h2>Énigme 3 💣</h2>
+
+  <p>
+    Sur le premier coffre : « J’avais 10 pièces, j’en perds 8. »<br />
+    Sur le deuxième coffre : « J’ai 5 billets, je les partage : 5 ÷ 5. »<br />
+    Sur le troisième coffre : « J’achète 2 lingots à 7 pièces chacun. »<br />
+    Sur le quatrième coffre : « Je cache 20 lingots, mais on m’en retrouve 3. »<br />
+    Sur le cinquième coffre : « Je trouve 3 sacs de 7 pièces chacun. »<br />
+    Sur le sixième coffre : « J’avais 12 pièces, j’en donne 7. »<br />
+    <strong>Indice :</strong> Nous recherchons un mot.
+  </p>
+
+  <div className="reponse-zone">
+    <input
+      type="text"
+      placeholder="Écris le mot secret"
+      className="reponse-input"
+    />
+    <button
+      className="reponse-button"
+      onClick={() => alert("Vérification de la réponse (à implémenter)")}
+    >
+      REPONSE
+    </button>
+  </div>
+</section>
+
 
         <aside className="chat-panel">
         <PlayersList players={players} />
