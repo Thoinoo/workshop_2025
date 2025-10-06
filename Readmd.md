@@ -116,3 +116,5 @@ Vite démarre l'application sur `http://localhost:5173` par défaut et se connec
 ```
 
 Vous disposez désormais de toutes les informations nécessaires pour installer et lancer le projet en local.
+
+m
