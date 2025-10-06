@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Chat from "../components/Chat";
+import PlayersList from "../components/PlayersList";
+import Timer from "../components/Timer";
 import socket from "../socket";
 import "./lobby.css";
 
@@ -18,7 +21,6 @@ export default function Enigme1() {
       return [];
     }
   });
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!username || !room) {
@@ -54,10 +56,10 @@ export default function Enigme1() {
     }
   }, [chat]);
 
-  const sendMessage = () => {
-    if (message.trim()) {
-      socket.emit("chatMessage", { room, username, message });
-      setMessage("");
+  const sendMessage = (content) => {
+    const trimmed = content.trim();
+    if (trimmed) {
+      socket.emit("chatMessage", { room, username, message: trimmed });
     }
   };
 
@@ -76,6 +78,8 @@ export default function Enigme1() {
             )}
           </p>
         </div>
+
+        <Timer /> 
 
         <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
       </header>
@@ -99,46 +103,8 @@ export default function Enigme1() {
         </section>
 
         <aside className="chat-panel">
-          <div className="players-list">
-            <h3>Participants</h3>
-            <ul>
-              {players.length > 0 ? (
-                players.map((p, i) => <li key={i}>{p}</li>)
-              ) : (
-                <li className="empty-state">En attente d'autres joueurs…</li>
-              )}
-            </ul>
-          </div>
-
-          <div className="chat-box" role="log" aria-live="polite">
-            {chat.length > 0 ? (
-              chat.map((m, i) => (
-                <div key={i} className="chat-message">
-                  <span className="chat-author">{m.username}</span>
-                  <span className="chat-text">{m.message}</span>
-                </div>
-              ))
-            ) : (
-              <p className="empty-state">Partagez vos premières impressions ici.</p>
-            )}
-          </div>
-
-          <div className="chat-input">
-            <input
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Message à l'équipe..."
-            />
-            <button className="game-primary" onClick={sendMessage}>
-              Envoyer
-            </button>
-          </div>
+        <PlayersList players={players} />
+          <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
     </div>
