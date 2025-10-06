@@ -22,11 +22,11 @@ export default function Enigme1() {
 
   useEffect(() => {
     if (!username || !room) {
-        navigate("/");
-        return () => {};
-      }
-  
-      socket.emit("joinRoom", { username, room });
+      navigate("/");
+      return;
+    }
+
+    socket.emit("joinRoom", { username, room });
     socket.on("playersUpdate", setPlayers);
     socket.on("newMessage", (msg) =>
       setChat((prev) => {
@@ -39,11 +39,12 @@ export default function Enigme1() {
         return updated;
       })
     );
+
     return () => {
       socket.off("playersUpdate");
       socket.off("newMessage");
     };
-}, [navigate, room, username]);
+  }, [navigate, room, username]);
 
   useEffect(() => {
     try {
@@ -61,26 +62,86 @@ export default function Enigme1() {
   };
 
   return (
-    <div className="game-page" style={{ textAlign: "center" }}>
-      <h1>Énigme 1 🔍</h1>
-      <h3>Joueurs :</h3>
-      {players.length ? (
-        <ul>{players.map((p, i) => <li key={i}>{p}</li>)}</ul>
-      ) : (
-        <p>Aucun joueur pour le moment.</p>
-      )}
+    <div className="game-page">
+      <header className="game-header">
+        <div>
+          <p className="game-room">Salle {room}</p>
+          <p className="game-username">
+            {username ? (
+              <>
+                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
+                prochaine étape.
+              </>
+            ) : (
+              "Préparez-vous à résoudre la première énigme."
+            )}
+          </p>
+        </div>
 
-      <div style={{ border: "1px solid #ccc", height: 150, overflowY: "auto" }}>
-        {chat.map((m, i) => (
-          <p key={i}><strong>{m.username}</strong>: {m.message}</p>
-        ))}
+        <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
+      </header>
+
+      <div className="game-layout">
+        <section className="game-card puzzle-content">
+          <h2>Énigme 1 🔍</h2>
+          <p>
+            Observez attentivement les éléments fournis par votre maître du jeu. Chaque détail
+            compte et l'échange d'idées avec votre équipe sera déterminant.
+          </p>
+
+          <div className="puzzle-instructions">
+            <h3>Briefing</h3>
+            <ul>
+              <li>Partagez vos découvertes dans le chat pour faire progresser l'équipe.</li>
+              <li>Notez les indices importants et confrontez vos hypothèses.</li>
+              <li>Lorsque vous êtes prêts, contactez le maître du jeu pour valider votre réponse.</li>
+            </ul>
+          </div>
+        </section>
+
+        <aside className="chat-panel">
+          <div className="players-list">
+            <h3>Participants</h3>
+            <ul>
+              {players.length > 0 ? (
+                players.map((p, i) => <li key={i}>{p}</li>)
+              ) : (
+                <li className="empty-state">En attente d'autres joueurs…</li>
+              )}
+            </ul>
+          </div>
+
+          <div className="chat-box" role="log" aria-live="polite">
+            {chat.length > 0 ? (
+              chat.map((m, i) => (
+                <div key={i} className="chat-message">
+                  <span className="chat-author">{m.username}</span>
+                  <span className="chat-text">{m.message}</span>
+                </div>
+              ))
+            ) : (
+              <p className="empty-state">Partagez vos premières impressions ici.</p>
+            )}
+          </div>
+
+          <div className="chat-input">
+            <input
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Message à l'équipe..."
+            />
+            <button className="game-primary" onClick={sendMessage}>
+              Envoyer
+            </button>
+          </div>
+        </aside>
       </div>
-
-      <input value={message} onChange={e => setMessage(e.target.value)} placeholder="Message..." />
-      <button class="game-primary" onClick={sendMessage}>Envoyer</button>
-
-      <br /><br />
-      <button class="game-primary" onClick={() => navigate("/jeu")}>Retour au jeu</button>
     </div>
   );
 }
