@@ -68,11 +68,11 @@ export default function Enigme4() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, dǸcryptez les indices pour progresser vers la
-                prochaine Ǹtape.
+                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
+                prochaine étape.
               </>
             ) : (
-              "PrǸparez-vous �� rǸsoudre la premi��re Ǹnigme."
+              "Préparez-vous à résoudre la première énigme."
             )}
           </p>
         </div>
@@ -85,13 +85,13 @@ export default function Enigme4() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <h2>�%nigme 4 �Y'�</h2>
+          <h2>Énigme 4</h2>
 
           <div className="container">
-            <h1>Logistique : rǸpartissez les palettes correctement</h1>
+            <h1>Logistique : répartissez les palettes correctement</h1>
             <h2>
               Glissez les palettes dans les bons camions selon la destination.
-              Attention, une mauvaise rǸpartition dǸclenche l�?Talarme !
+              Attention, une mauvaise répartition déclenche l'alarme !
             </h2>
 
             <div id="logistique-jeu">
@@ -126,7 +126,7 @@ export default function Enigme4() {
 
             <div className="input-area">
               <input type="text" id="reponse" placeholder="Entrez votre mot de passe" />
-              <button onClick={() => alert("Validation �� implǸmenter")}>Valider</button>
+              <button onClick={() => alert("Validation à implémenter")}>Valider</button>
             </div>
 
             <p id="resultat"></p>
