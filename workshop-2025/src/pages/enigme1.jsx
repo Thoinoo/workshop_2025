@@ -61,7 +61,7 @@ export default function Enigme1() {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="game-page" style={{ textAlign: "center" }}>
       <h1>Énigme 1 🔍</h1>
       <h3>Joueurs :</h3>
       {players.length ? (
