@@ -9,19 +9,45 @@ export default function Jeu() {
 
   const [players, setPlayers] = useState([]);
   const [message, setMessage] = useState("");
-  const [chat, setChat] = useState([]);
+  const [chat, setChat] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("chatHistory");
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error("Unable to read chat history from sessionStorage", error);
+      return [];
+    }
+  });
 
   useEffect(() => {
     socket.emit("joinRoom", { username, room });
 
     socket.on("playersUpdate", setPlayers);
-    socket.on("newMessage", (msg) => setChat((prev) => [...prev, msg]));
+    socket.on("newMessage", (msg) =>
+      setChat((prev) => {
+        const updated = [...prev, msg];
+        try {
+          sessionStorage.setItem("chatHistory", JSON.stringify(updated));
+        } catch (error) {
+          console.error("Unable to persist chat history in sessionStorage", error);
+        }
+        return updated;
+      })
+    );
 
     return () => {
       socket.off("playersUpdate");
       socket.off("newMessage");
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("chatHistory", JSON.stringify(chat));
+    } catch (error) {
+      console.error("Unable to persist chat history in sessionStorage", error);
+    }
+  }, [chat]);
 
   const sendMessage = () => {
     if (message.trim()) {
