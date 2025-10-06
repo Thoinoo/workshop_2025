@@ -20,6 +20,12 @@ export default function Enigme1() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (!username || !room) {
+        navigate("/");
+        return () => {};
+      }
+  
+      socket.emit("joinRoom", { username, room });
     socket.on("playersUpdate", setPlayers);
     socket.on("newMessage", (msg) =>
       setChat((prev) => {
@@ -36,7 +42,7 @@ export default function Enigme1() {
       socket.off("playersUpdate");
       socket.off("newMessage");
     };
-  }, []);
+}, [navigate, room, username]);
 
   useEffect(() => {
     try {
@@ -56,7 +62,12 @@ export default function Enigme1() {
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Énigme 1 🔍</h1>
-      <ul>{players.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      <h3>Joueurs :</h3>
+      {players.length ? (
+        <ul>{players.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      ) : (
+        <p>Aucun joueur pour le moment.</p>
+      )}
 
       <div style={{ border: "1px solid #ccc", height: 150, overflowY: "auto" }}>
         {chat.map((m, i) => (

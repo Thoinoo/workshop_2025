@@ -20,6 +20,10 @@ export default function Jeu() {
   });
 
   useEffect(() => {
+    if (!username || !room) {
+        navigate("/");
+        return () => {};
+      }
     socket.emit("joinRoom", { username, room });
 
     socket.on("playersUpdate", setPlayers);
@@ -39,7 +43,7 @@ export default function Jeu() {
       socket.off("playersUpdate");
       socket.off("newMessage");
     };
-  }, []);
+    }, [navigate, room, username]);
 
   useEffect(() => {
     try {
