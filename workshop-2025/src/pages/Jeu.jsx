@@ -77,6 +77,9 @@ export default function Jeu() {
         <button className="game-primary" onClick={() => navigate("/enigme3")}>
           Accéder à l'énigme 3
         </button>
+        <button className="game-primary" onClick={() => navigate("/enigme4")}>
+          Accéder à l'énigme 4
+        </button>
       </header>
 
       <div className="game-layout">
