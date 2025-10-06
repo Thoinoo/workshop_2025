@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Accueil from "./pages/Accueil";
+import Jeu from "./pages/Jeu";
+import Enigme1 from "./pages/Enigme1";
 
 function App() {
-  const [msg, setMsg] = useState('Chargement...');
-
-  useEffect(() => {
-    fetch('/api/hello')
-      .then(res => res.json())
-      .then(data => setMsg(data.message))
-      .catch(err => setMsg('Erreur: ' + err.message));
-  }, []);
-
   return (
-    <div style={{ textAlign: 'center' }}>
-      <h1>Test communication front ↔ back</h1>
-      <p>{msg}</p>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Accueil />} />
+        <Route path="/jeu" element={<Jeu />} />
+        <Route path="/enigme1" element={<Enigme1 />} />
+      </Routes>
+    </Router>
   );
 }
 

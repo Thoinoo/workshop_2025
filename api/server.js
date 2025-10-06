@@ -1,20 +1,41 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
 
-// Config
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
-app.use(cors());             // autorise le front en dev
-app.use(express.json());     // parse JSON
+let rooms = {}; // { roomNumber: { players: [], messages: [] } }
 
-// Routes API
-app.get('/api/health', (req, res) => res.json({ ok: true }));
-app.get('/api/hello', (req, res) => res.json({ message: 'Hello depuis Node 👋' }));
+io.on('connection', (socket) => {
+  console.log('🟢 Nouvelle connexion');
 
-app.listen(PORT, () => {
-  console.log(`API sur http://localhost:${PORT}`);
+  socket.on('joinRoom', ({ username, room }) => {
+    socket.join(room);
+    if (!rooms[room]) rooms[room] = { players: [], messages: [] };
+
+    rooms[room].players.push(username);
+    io.to(room).emit('playersUpdate', rooms[room].players);
+    console.log(`${username} a rejoint la salle ${room}`);
+  });
+
+  socket.on('chatMessage', ({ room, username, message }) => {
+    const msg = { username, message };
+    rooms[room]?.messages.push(msg);
+    io.to(room).emit('newMessage', msg);
+  });
+
+  socket.on('disconnect', () => {
+    // Simple: pas de cleanup ici pour la démo
+    console.log('🔴 Déconnexion');
+  });
 });
+
+server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
