@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../socket";
+import "./lobby.css";
 
 export default function Enigme1() {
   const navigate = useNavigate();
@@ -76,10 +77,10 @@ export default function Enigme1() {
       </div>
 
       <input value={message} onChange={e => setMessage(e.target.value)} placeholder="Message..." />
-      <button onClick={sendMessage}>Envoyer</button>
+      <button class="game-primary" onClick={sendMessage}>Envoyer</button>
 
       <br /><br />
-      <button onClick={() => navigate("/jeu")}>Retour au jeu</button>
+      <button class="game-primary" onClick={() => navigate("/jeu")}>Retour au jeu</button>
     </div>
   );
 }
