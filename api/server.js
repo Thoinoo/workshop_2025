@@ -18,12 +18,22 @@ io.on('connection', (socket) => {
   console.log('🟢 Nouvelle connexion');
 
   socket.on('joinRoom', ({ username, room }) => {
-    socket.join(room);
-    if (!rooms[room]) rooms[room] = { players: [], messages: [] };
+    const trimmedUsername = (username ?? '').trim();
+    const trimmedRoom = (room ?? '').trim();
 
-    rooms[room].players.push(username);
-    io.to(room).emit('playersUpdate', rooms[room].players);
-    console.log(`${username} a rejoint la salle ${room}`);
+    socket.join(trimmedRoom);
+    socket.data.username = trimmedUsername;
+    socket.data.room = trimmedRoom;
+
+    if (!rooms[trimmedRoom]) rooms[trimmedRoom] = { players: [], messages: [] };
+
+    rooms[trimmedRoom].players = rooms[trimmedRoom].players.filter(
+      (player) => player !== trimmedUsername
+    );
+    rooms[trimmedRoom].players.push(trimmedUsername);
+
+    io.to(trimmedRoom).emit('playersUpdate', rooms[trimmedRoom].players);
+    console.log(`${trimmedUsername} a rejoint la salle ${trimmedRoom}`);
   });
 
   socket.on('chatMessage', ({ room, username, message }) => {
@@ -33,7 +43,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // Simple: pas de cleanup ici pour la démo
+    const { room, username } = socket.data || {};
+
+    if (room && rooms[room]) {
+      rooms[room].players = rooms[room].players.filter((player) => player !== username);
+
+      if (!rooms[room].players.length && !rooms[room].messages.length) {
+        delete rooms[room];
+      } else {
+        io.to(room).emit('playersUpdate', rooms[room].players);
+      }
+    }
     console.log('🔴 Déconnexion');
   });
 });
