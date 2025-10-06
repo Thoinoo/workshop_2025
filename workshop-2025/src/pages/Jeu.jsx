@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Chat from "../components/Chat";
+import PlayersList from "../components/PlayersList";
+import Timer from "../components/Timer";
 import socket from "../socket";
 import "./lobby.css";
 
@@ -9,7 +12,6 @@ export default function Jeu() {
   const room = sessionStorage.getItem("room");
 
   const [players, setPlayers] = useState([]);
-  const [message, setMessage] = useState("");
   const [chat, setChat] = useState(() => {
     try {
       const stored = sessionStorage.getItem("chatHistory");
@@ -22,9 +24,9 @@ export default function Jeu() {
 
   useEffect(() => {
     if (!username || !room) {
-        navigate("/");
-        return () => {};
-      }
+      navigate("/");
+      return () => {};
+    }
     socket.emit("joinRoom", { username, room });
 
     socket.on("playersUpdate", setPlayers);
@@ -54,10 +56,10 @@ export default function Jeu() {
     }
   }, [chat]);
 
-  const sendMessage = () => {
-    if (message.trim()) {
-      socket.emit("chatMessage", { room, username, message });
-      setMessage("");
+  const sendMessage = (content) => {
+    const trimmed = content.trim();
+    if (trimmed) {
+      socket.emit("chatMessage", { room, username, message: trimmed });
     }
   };
 
@@ -68,6 +70,7 @@ export default function Jeu() {
           <p className="game-room">Salle {room}</p>
           {username && <p className="game-username">Connecté en tant que <strong>{username}</strong></p>}
         </div>
+        <Timer />
         <button className="game-primary" onClick={() => navigate("/enigme1")}>
           Accéder à l'énigme 1
         </button>
@@ -86,46 +89,8 @@ export default function Jeu() {
         </section>
 
         <aside className="chat-panel">
-          <div className="players-list">
-            <h3>Participants</h3>
-            <ul>
-              {players.length > 0 ? (
-                players.map((p, i) => <li key={i}>{p}</li>)
-              ) : (
-                <li className="empty-state">En attente d'autres joueurs…</li>
-              )}
-            </ul>
-          </div>
-
-          <div className="chat-box" role="log" aria-live="polite">
-            {chat.length > 0 ? (
-              chat.map((m, i) => (
-                <div key={i} className="chat-message">
-                  <span className="chat-author">{m.username}</span>
-                  <span className="chat-text">{m.message}</span>
-                </div>
-              ))
-            ) : (
-              <p className="empty-state">Soyez le premier à lancer la conversation !</p>
-            )}
-          </div>
-
-          <div className="chat-input">
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Écrire un message..."
-            />
-            <button className="game-primary" onClick={sendMessage}>
-              Envoyer
-            </button>
-          </div>
+        <PlayersList players={players} />
+          <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
     </div>
