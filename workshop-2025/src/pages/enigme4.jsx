@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import "./enigme4.css";
 import useRoomState from "../hooks/useRoomState";
+import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme4() {
   const navigate = useNavigate();
@@ -64,7 +65,23 @@ export default function Enigme4() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
+        <div className="game-header-section game-header-section--info">
+          <EnigmesGridMenu active="enigme4" />
+        </div>
+
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={timerRemaining} />
+        </div>
+
+        <div className="game-header-section game-header-section--actions">
+          <button className="game-secondary" onClick={() => navigate("/jeu")}>
+            Retour au lobby
+          </button>
+        </div>
+      </header>
+
+      <div className="game-layout">
+        <section className="game-card puzzle-content">
           <p className="game-username">
             {username ? (
               <>
@@ -72,26 +89,16 @@ export default function Enigme4() {
                 prochaine étape.
               </>
             ) : (
-              "Préparez-vous à résoudre la première énigme."
+              "Préparez-vous à résoudre la prochaine énigme."
             )}
           </p>
-        </div>
-
-        <BombeTimer remainingSeconds={timerRemaining} />
-        <button className="game-secondary" onClick={() => navigate("/jeu")}>
-          Retour au lobby
-        </button>
-      </header>
-
-      <div className="game-layout">
-        <section className="game-card puzzle-content">
           <h2>Énigme 4</h2>
 
           <div className="container">
             <h1>Logistique : répartissez les palettes correctement</h1>
             <h2>
-              Glissez les palettes dans les bons camions selon la destination.
-              Attention, une mauvaise répartition déclenche l'alarme !
+              Glissez les palettes dans les bons camions selon la destination. Attention, une
+              mauvaise répartition déclenche l'alarme&nbsp;!
             </h2>
 
             <div id="logistique-jeu">
@@ -99,15 +106,23 @@ export default function Enigme4() {
                 <div className="client">
                   <div className="client-label">Client A</div>
                   <div className="palettes">
-                    <div className="palette" draggable="true">A1</div>
-                    <div className="palette" draggable="true">A2</div>
+                    <div className="palette" draggable="true">
+                      A1
+                    </div>
+                    <div className="palette" draggable="true">
+                      A2
+                    </div>
                   </div>
                 </div>
                 <div className="client">
                   <div className="client-label">Client B</div>
                   <div className="palettes">
-                    <div className="palette" draggable="true">B1</div>
-                    <div className="palette" draggable="true">B2</div>
+                    <div className="palette" draggable="true">
+                      B1
+                    </div>
+                    <div className="palette" draggable="true">
+                      B2
+                    </div>
                   </div>
                 </div>
               </div>

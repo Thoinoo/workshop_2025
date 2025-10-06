@@ -4,6 +4,7 @@ import PlayersList from "../components/PlayersList";
 import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
+import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Jeu() {
   const navigate = useNavigate();
@@ -12,32 +13,37 @@ export default function Jeu() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
+        <div className="game-header-section game-header-section--info">
+          <EnigmesGridMenu />
           <p className="game-room">Salle {room}</p>
-          {username && <p className="game-username">Connecté en tant que <strong>{username}</strong></p>}
         </div>
-        <BombeTimer remainingSeconds={timerRemaining} />
-        <button className="game-primary" onClick={() => navigate("/enigme1")}>
-          Accéder à l'énigme 1
-        </button>
-        <button className="game-primary" onClick={() => navigate("/enigme3")}>
-          Accéder à l'énigme 3
-        </button>
-        <button className="game-primary" onClick={() => navigate("/enigme4")}>
-          Accéder à l'énigme 4
-        </button>
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={timerRemaining} />
+        </div>
+        <div className="game-header-section game-header-section--actions">
+          <button className="game-secondary" onClick={() => navigate("/")}>
+            Retour à l'accueil
+          </button>
+        </div>
       </header>
 
       <div className="game-layout">
         <section className="game-card">
-          <h2>Prêt pour la prochaine étape ?</h2>
+          {username ? (
+            <p className="game-username">
+              Agent <strong>{username}</strong>, coordonnez votre équipe avant de lancer une nouvelle
+              énigme.
+            </p>
+          ) : (
+            <p className="game-username">
+              Préparez votre équipe et choisissez l'énigme idéale pour débuter la mission.
+            </p>
+          )}
+          <h2>Prêt pour la prochaine étape&nbsp;?</h2>
           <p>
-            Communiquez avec votre équipe dans le chat pour élaborer une stratégie et
-            plongez-vous ensuite dans la première énigme.
+            Communiquez avec votre équipe dans le chat pour élaborer une stratégie avant de vous
+            lancer sur l'énigme de votre choix.
           </p>
-          <button className="game-secondary" onClick={() => navigate("/enigme1")}>
-            Démarrer l'énigme 1
-          </button>
         </section>
 
         <aside className="chat-panel">

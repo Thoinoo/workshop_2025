@@ -1,9 +1,10 @@
-﻿import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
 import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
+import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme3() {
   const navigate = useNavigate();
@@ -12,7 +13,21 @@ export default function Enigme3() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
+        <div className="game-header-section game-header-section--info">
+          <EnigmesGridMenu active="enigme3" />
+        </div>
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={timerRemaining} />
+        </div>
+        <div className="game-header-section game-header-section--actions">
+          <button className="game-secondary" onClick={() => navigate("/jeu")}>
+            Retour au lobby
+          </button>
+        </div>
+      </header>
+
+      <div className="game-layout">
+        <section className="game-card puzzle-content">
           <p className="game-username">
             {username ? (
               <>
@@ -23,13 +38,6 @@ export default function Enigme3() {
               "Préparez-vous à résoudre la première énigme."
             )}
           </p>
-        </div>
-        <BombeTimer remainingSeconds={timerRemaining} />
-        <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
-      </header>
-
-      <div className="game-layout">
-        <section className="game-card puzzle-content">
           <h2>Énigme 3</h2>
 
           <p>
@@ -43,16 +51,12 @@ export default function Enigme3() {
           </p>
 
           <div className="reponse-zone">
-            <input
-              type="text"
-              placeholder="Écris le mot secret"
-              className="reponse-input"
-            />
+            <input type="text" placeholder="Écris le mot secret" className="reponse-input" />
             <button
               className="reponse-button"
               onClick={() => alert("Vérification de la réponse (à implémenter)")}
             >
-              REPONSE
+              RÉPONSE
             </button>
           </div>
         </section>
