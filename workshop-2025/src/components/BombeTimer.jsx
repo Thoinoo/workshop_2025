@@ -1,37 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./BombeTimer.css";
 
-export default function BombeTimer({ startSeconds = 10 }) {
-  const [remaining, setRemaining] = useState(startSeconds);
+export default function BombeTimer({ remainingSeconds = null }) {
   const [exploded, setExploded] = useState(false);
+  const alertShownRef = useRef(false);
 
   useEffect(() => {
-    if (remaining <= 0 || exploded) return;
+    if (typeof remainingSeconds !== "number") {
+      setExploded(false);
+      alertShownRef.current = false;
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setExploded(true);
-          setTimeout(() => {
-            alert("💥 Le temps est écoulé, vous avez perdu !");
-          }, 1200);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (remainingSeconds <= 0) {
+      setExploded(true);
 
-    return () => clearInterval(interval);
-  }, [remaining, exploded]);
+      if (!alertShownRef.current) {
+        alertShownRef.current = true;
+        setTimeout(() => {
+          alert("💥 Le temps est écoulé, vous avez perdu !");
+        }, 200);
+      }
+    } else {
+      setExploded(false);
+      alertShownRef.current = false;
+    }
+  }, [remainingSeconds]);
 
-  const mm = Math.floor(remaining / 60)
+  if (typeof remainingSeconds !== "number") {
+    return (
+      <div className="bombe">
+        <div className="time">--:--</div>
+      </div>
+    );
+  }
+
+  const mm = Math.floor(remainingSeconds / 60)
     .toString()
     .padStart(2, "0");
-  const ss = (remaining % 60).toString().padStart(2, "0");
+  const ss = (remainingSeconds % 60).toString().padStart(2, "0");
+
+  const warn = remainingSeconds <= 10;
 
   return (
-    <div className={`bombe ${remaining <= 10 ? "warn" : ""} ${exploded ? "exploded" : ""}`}>
+    <div className={`bombe ${warn ? "warn" : ""} ${exploded ? "exploded" : ""}`}>
       {!exploded && <div className="spark"></div>}
       <div className="time">{mm}:{ss}</div>
       {exploded && <div className="blast-msg show">💥 BOOM!</div>}

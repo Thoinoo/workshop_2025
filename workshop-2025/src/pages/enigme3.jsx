@@ -1,68 +1,13 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
-import socket from "../socket";
 import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
-
+import useRoomState from "../hooks/useRoomState";
 
 export default function Enigme3() {
   const navigate = useNavigate();
-  const username = sessionStorage.getItem("pseudo");
-  const room = sessionStorage.getItem("room");
-
-  const [players, setPlayers] = useState([]);
-  const [chat, setChat] = useState(() => {
-    try {
-      const stored = sessionStorage.getItem("chatHistory");
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error("Unable to read chat history from sessionStorage", error);
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    if (!username || !room) {
-      navigate("/");
-      return;
-    }
-
-    socket.emit("joinRoom", { username, room });
-    socket.on("playersUpdate", setPlayers);
-    socket.on("newMessage", (msg) =>
-      setChat((prev) => {
-        const updated = [...prev, msg];
-        try {
-          sessionStorage.setItem("chatHistory", JSON.stringify(updated));
-        } catch (error) {
-          console.error("Unable to persist chat history in sessionStorage", error);
-        }
-        return updated;
-      })
-    );
-
-    return () => {
-      socket.off("playersUpdate");
-      socket.off("newMessage");
-    };
-  }, [navigate, room, username]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem("chatHistory", JSON.stringify(chat));
-    } catch (error) {
-      console.error("Unable to persist chat history in sessionStorage", error);
-    }
-  }, [chat]);
-
-  const sendMessage = (content) => {
-    const trimmed = content.trim();
-    if (trimmed) {
-      socket.emit("chatMessage", { room, username, message: trimmed });
-    }
-  };
+  const { username, players, chat, timerRemaining, sendMessage } = useRoomState();
 
   return (
     <div className="game-page">
@@ -71,42 +16,42 @@ export default function Enigme3() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
-                prochaine étape.
+                Agent <strong>{username}</strong>, dǸcryptez les indices pour progresser vers la
+                prochaine Ǹtape.
               </>
             ) : (
-              "Préparez-vous à résoudre la première énigme."
+              "PrǸparez-vous �� rǸsoudre la premi��re Ǹnigme."
             )}
           </p>
         </div>
-        <BombeTimer startSeconds={600} />
+        <BombeTimer remainingSeconds={timerRemaining} />
         <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
       </header>
 
       <div className="game-layout">
       <section className="game-card puzzle-content">
 
-  <h2>Énigme 3 💣</h2>
+  <h2>�%nigme 3 �Y'�</h2>
 
   <p>
-    Sur le premier coffre : « J’avais 10 pièces, j’en perds 8. »<br />
-    Sur le deuxième coffre : « J’ai 5 billets, je les partage : 5 ÷ 5. »<br />
-    Sur le troisième coffre : « J’achète 2 lingots à 7 pièces chacun. »<br />
-    Sur le quatrième coffre : « Je cache 20 lingots, mais on m’en retrouve 3. »<br />
-    Sur le cinquième coffre : « Je trouve 3 sacs de 7 pièces chacun. »<br />
-    Sur le sixième coffre : « J’avais 12 pièces, j’en donne 7. »<br />
+    Sur le premier coffre : �� J�?Tavais 10 pi��ces, j�?Ten perds 8. ��<br />
+    Sur le deuxi��me coffre : �� J�?Tai 5 billets, je les partage : 5 �� 5. ��<br />
+    Sur le troisi��me coffre : �� J�?Tach��te 2 lingots �� 7 pi��ces chacun. ��<br />
+    Sur le quatri��me coffre : �� Je cache 20 lingots, mais on m�?Ten retrouve 3. ��<br />
+    Sur le cinqui��me coffre : �� Je trouve 3 sacs de 7 pi��ces chacun. ��<br />
+    Sur le sixi��me coffre : �� J�?Tavais 12 pi��ces, j�?Ten donne 7. ��<br />
     <strong>Indice :</strong> Nous recherchons un mot.
   </p>
 
   <div className="reponse-zone">
     <input
       type="text"
-      placeholder="Écris le mot secret"
+      placeholder="�%cris le mot secret"
       className="reponse-input"
     />
     <button
       className="reponse-button"
-      onClick={() => alert("Vérification de la réponse (à implémenter)")}
+      onClick={() => alert("VǸrification de la rǸponse (�� implǸmenter)")}
     >
       REPONSE
     </button>
@@ -115,7 +60,7 @@ export default function Enigme3() {
 
 
         <aside className="chat-panel">
-        <PlayersList players={players} />
+          <PlayersList players={players} />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
