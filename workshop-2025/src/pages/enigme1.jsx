@@ -65,7 +65,6 @@ export default function Enigme1() {
     <div className="game-page">
       <header className="game-header">
         <div>
-          <p className="game-room">Salle {room}</p>
           <p className="game-username">
             {username ? (
               <>
