@@ -1,19 +1,26 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useRoomState from "../hooks/useRoomState";
 import { getAvatarById } from "../constants/avatars";
+import { formatDuration, formatOrdinal } from "../utils/formatting";
 import "./lobby.css";
 
-const formatDuration = (seconds) => {
-  if (typeof seconds !== "number" || Number.isNaN(seconds) || seconds < 0) {
-    return "--:--";
+const joinPlayers = (players) =>
+  Array.isArray(players)
+    ? players.filter((name) => typeof name === "string" && name.trim()).join(", ")
+    : "";
+
+const buildTeamName = (names, room) => {
+  if (!Array.isArray(names) || !names.length) {
+    return room ? `Salle ${room}` : "Equipe anonyme";
   }
-  const totalSeconds = Math.floor(seconds);
-  const mins = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const secs = (totalSeconds % 60).toString().padStart(2, "0");
-  return `${mins}:${secs}`;
+  if (names.length === 1) {
+    return names[0];
+  }
+  if (names.length === 2) {
+    return `${names[0]} & ${names[1]}`;
+  }
+  return `${names[0]} + ${names.length - 1}`;
 };
 
 export default function Victory() {
@@ -27,7 +34,21 @@ export default function Victory() {
     resetMission,
     isHost,
     allEnigmesCompleted,
+    latestLeaderboardEntry,
+    recordLeaderboardEntry,
   } = useRoomState();
+
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardTotal, setLeaderboardTotal] = useState(null);
+  const [leaderboardError, setLeaderboardError] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const submissionRef = useRef(false);
+  const lastFetchedEntryIdRef = useRef(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
   useEffect(() => {
     if (!missionCompleted && !allEnigmesCompleted) {
@@ -35,10 +56,138 @@ export default function Victory() {
     }
   }, [allEnigmesCompleted, missionCompleted, missionStarted, navigate]);
 
+  const currentPlayers = useMemo(
+    () => (players && players.length ? players.map((player) => player?.username).filter(Boolean) : []),
+    [players]
+  );
+
   const formattedTime = useMemo(
     () => formatDuration(missionElapsedSeconds),
     [missionElapsedSeconds]
   );
+
+  const teamName = useMemo(() => buildTeamName(currentPlayers, room), [currentPlayers, room]);
+
+  const fetchLeaderboard = useCallback(async () => {
+    if (!isMountedRef.current) {
+      return;
+    }
+    setLeaderboardLoading(true);
+    setLeaderboardError(null);
+    try {
+      const response = await fetch("/api/leaderboard?limit=10");
+      if (!response.ok) {
+        throw new Error("Impossible de charger le classement");
+      }
+      const data = await response.json();
+      if (!isMountedRef.current) {
+        return;
+      }
+      setLeaderboard(Array.isArray(data.entries) ? data.entries : []);
+      setLeaderboardTotal(typeof data.total === "number" ? data.total : null);
+    } catch (error) {
+      if (isMountedRef.current) {
+        setLeaderboardError(error.message || "Impossible de charger le classement");
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setLeaderboardLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  useEffect(() => {
+    if (!missionCompleted) {
+      submissionRef.current = false;
+      return;
+    }
+    if (submissionRef.current) {
+      return;
+    }
+
+    if (latestLeaderboardEntry) {
+      submissionRef.current = true;
+      fetchLeaderboard();
+      return;
+    }
+
+    if (!isHost) {
+      submissionRef.current = true;
+      fetchLeaderboard();
+      return;
+    }
+
+    if (!currentPlayers.length || !Number.isFinite(missionElapsedSeconds)) {
+      submissionRef.current = true;
+      fetchLeaderboard();
+      return;
+    }
+
+    submissionRef.current = true;
+    (async () => {
+      try {
+        const response = await fetch("/api/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamName,
+            players: currentPlayers,
+            elapsedSeconds: missionElapsedSeconds,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error("Impossible d'enregistrer le score");
+        }
+        const data = await response.json();
+        if (data.entry) {
+          recordLeaderboardEntry(data.entry, { broadcast: true });
+        }
+        if (typeof data.total === "number") {
+          setLeaderboardTotal(data.total);
+        }
+        await fetchLeaderboard();
+      } catch (error) {
+        if (isMountedRef.current) {
+          setLeaderboardError(error.message || "Impossible d'enregistrer le score");
+        }
+        submissionRef.current = false;
+      }
+    })();
+  }, [
+    missionCompleted,
+    missionElapsedSeconds,
+    currentPlayers,
+    teamName,
+    isHost,
+    latestLeaderboardEntry,
+    recordLeaderboardEntry,
+    fetchLeaderboard,
+  ]);
+
+  useEffect(() => {
+    if (!latestLeaderboardEntry || latestLeaderboardEntry.id === lastFetchedEntryIdRef.current) {
+      return;
+    }
+    lastFetchedEntryIdRef.current = latestLeaderboardEntry.id;
+    fetchLeaderboard();
+  }, [latestLeaderboardEntry, fetchLeaderboard]);
+
+  const currentEntry = latestLeaderboardEntry;
+  const currentRankLabel = useMemo(
+    () => (currentEntry?.rank ? formatOrdinal(currentEntry.rank) : "--"),
+    [currentEntry]
+  );
+
+  const outsideTopEntry = useMemo(() => {
+    if (!currentEntry) {
+      return null;
+    }
+    return leaderboard.some((entry) => entry.id === currentEntry.id) ? null : currentEntry;
+  }, [currentEntry, leaderboard]);
 
   return (
     <div className="game-page victory-page">
@@ -80,6 +229,13 @@ export default function Victory() {
                 Blockchain stabilisee
               </span>
             </div>
+            <div className="victory-metric">
+              <span className="victory-metric__label">Classement</span>
+              <span className="victory-metric__value">{currentRankLabel}</span>
+              {leaderboardTotal ? (
+                <span className="victory-metric__hint">sur {leaderboardTotal} equipes</span>
+              ) : null}
+            </div>
           </div>
 
           <div className="victory-players">
@@ -108,6 +264,59 @@ export default function Victory() {
                 <p className="victory-avatars__empty">Les agents se deconnectent...</p>
               )}
             </div>
+          </div>
+
+          <div className="victory-leaderboard">
+            <div className="leaderboard__header">
+              <h2>Top 10 mondial</h2>
+              {leaderboardTotal ? (
+                <span className="leaderboard__total">{leaderboardTotal} equipes</span>
+              ) : null}
+            </div>
+            {leaderboardError ? (
+              <p className="leaderboard__error">{leaderboardError}</p>
+            ) : null}
+            {leaderboardLoading ? (
+              <p className="leaderboard__loading">Chargement du classement...</p>
+            ) : null}
+            {!leaderboardLoading && !leaderboardError ? (
+              leaderboard.length ? (
+                <>
+                  <ol className="leaderboard">
+                    {leaderboard.map((entry) => {
+                      const isCurrent = currentEntry && entry.id === currentEntry.id;
+                      return (
+                        <li
+                          key={entry.id}
+                          className={`leaderboard__item ${isCurrent ? "is-current" : ""}`.trim()}
+                        >
+                          <span className="leaderboard__rank">{formatOrdinal(entry.rank)}</span>
+                          <span className="leaderboard__team">
+                            <strong>{entry.teamName}</strong>
+                            <span className="leaderboard__members">{joinPlayers(entry.players)}</span>
+                          </span>
+                          <span className="leaderboard__time">{formatDuration(entry.elapsedSeconds)}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  {outsideTopEntry ? (
+                    <div className="leaderboard__current">
+                      <span className="leaderboard__rank">{formatOrdinal(outsideTopEntry.rank)}</span>
+                      <span className="leaderboard__team">
+                        <strong>{outsideTopEntry.teamName}</strong>
+                        <span className="leaderboard__members">{joinPlayers(outsideTopEntry.players)}</span>
+                      </span>
+                      <span className="leaderboard__time">
+                        {formatDuration(outsideTopEntry.elapsedSeconds)}
+                      </span>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <p className="leaderboard__empty">Pas encore de mission enregistree.</p>
+              )
+            ) : null}
           </div>
         </section>
       </main>

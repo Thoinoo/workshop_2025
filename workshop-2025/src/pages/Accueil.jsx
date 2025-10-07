@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDuration, formatOrdinal } from "../utils/formatting";
 import "./lobby.css";
 
 const MODE_JOIN = "join";
@@ -7,12 +8,61 @@ const MODE_CREATE = "create";
 
 const generateRoomCode = () => String(Math.floor(1000 + Math.random() * 9000));
 
+const joinPlayers = (players) =>
+  Array.isArray(players)
+    ? players
+        .filter((name) => typeof name === "string" && name.trim())
+        .slice(0, 4)
+        .join(", ")
+    : "";
+
 export default function Accueil() {
   const navigate = useNavigate();
   const [pseudo, setPseudo] = useState("");
   const [mode, setMode] = useState(MODE_JOIN);
   const [joinRoom, setJoinRoom] = useState("");
   const [createRoom, setCreateRoom] = useState(() => generateRoomCode());
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardError, setLeaderboardError] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLeaderboard = async () => {
+      if (cancelled) {
+        return;
+      }
+      setLeaderboardLoading(true);
+      setLeaderboardError(null);
+      try {
+        const response = await fetch("/api/leaderboard?limit=10");
+        if (!response.ok) {
+          throw new Error("Impossible de recuperer le leaderboard");
+        }
+        const data = await response.json();
+        if (!cancelled) {
+          setLeaderboard(Array.isArray(data.entries) ? data.entries : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLeaderboardError(error.message || "Impossible de recuperer le leaderboard");
+        }
+      } finally {
+        if (!cancelled) {
+          setLeaderboardLoading(false);
+        }
+      }
+    };
+
+    loadLeaderboard();
+    const interval = setInterval(loadLeaderboard, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   const canSubmitJoin = useMemo(
     () => pseudo.trim().length > 0 && joinRoom.trim().length === 4,
@@ -75,14 +125,12 @@ export default function Accueil() {
         <div className="game-header-section game-header-section--timer">
           <div className="home-code-badge">Crypto breakdown</div>
         </div>
-        <div className="game-header-section game-header-section--actions">
-          
-        </div>
+        <div className="game-header-section game-header-section--actions"></div>
       </header>
 
       <div className="game-layout">
         <section className="game-card">
-        <div className="home-toggle">
+          <div className="home-toggle">
             <button
               type="button"
               className={`home-toggle__option ${mode === MODE_JOIN ? "is-active" : ""}`}
@@ -102,7 +150,7 @@ export default function Accueil() {
           <p>
             {mode === MODE_JOIN
               ? "Entrez le code de salle communique par votre controleur pour integrer l'equipe deja en place."
-              : "Un code de salle unique est genere pour vous. Partagez-le avec l'equipe avant de lancer la mission."}
+              : "Lancez une mission et appeler vos agents !"}
           </p>
 
           <form
@@ -131,7 +179,8 @@ export default function Accueil() {
                   }
                 />
               </label>
-            ) : null}
+            ) : (null
+            )}
 
             <button
               type="submit"
@@ -159,6 +208,36 @@ export default function Accueil() {
               En tant qu'hote, vous pourrez attendre vos coequipiers sur l'ecran de prepartie avant
               de lancer le compteur.
             </p>
+          </div>
+
+          <div className="leaderboard-card">
+            <div className="leaderboard__header">
+              <h3>Leaderboard</h3>
+            </div>
+            {leaderboardError ? (
+              <p className="leaderboard__error">{leaderboardError}</p>
+            ) : null}
+            {leaderboardLoading ? (
+              <p className="leaderboard__loading">Chargement...</p>
+            ) : null}
+            {!leaderboardLoading && !leaderboardError ? (
+              leaderboard.length ? (
+                <ol className="leaderboard leaderboard--compact">
+                  {leaderboard.slice(0, 5).map((entry) => (
+                    <li key={entry.id} className="leaderboard__item">
+                      <span className="leaderboard__rank">{formatOrdinal(entry.rank)}</span>
+                      <span className="leaderboard__team">
+                        <strong>{entry.teamName}</strong>
+                        <span className="leaderboard__members">{joinPlayers(entry.players)}</span>
+                      </span>
+                      <span className="leaderboard__time">{formatDuration(entry.elapsedSeconds)}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="leaderboard__empty">Aucun temps enregistre pour le moment.</p>
+              )
+            ) : null}
           </div>
         </aside>
       </div>

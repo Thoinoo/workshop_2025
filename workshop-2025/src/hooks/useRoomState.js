@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   missionElapsedSeconds: "missionElapsedSeconds",
   missionCompleted: "missionCompleted",
   avatar: "avatar",
+  leaderboardEntry: "leaderboardEntry",
 };
 
 const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4"];
@@ -30,6 +31,18 @@ export default function useRoomState() {
   const [room] = useState(() => sessionStorage.getItem(STORAGE_KEYS.room) || "");
   const [isHost] = useState(() => readBoolean(STORAGE_KEYS.isHost));
   const [avatar, setAvatar] = useState(() => sessionStorage.getItem(STORAGE_KEYS.avatar) || "");
+  const [latestLeaderboardEntry, setLatestLeaderboardEntry] = useState(() => {
+    const stored = sessionStorage.getItem(STORAGE_KEYS.leaderboardEntry);
+    if (!stored) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(stored);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
   const [missionStarted, setMissionStarted] = useState(() =>
     readBoolean(STORAGE_KEYS.missionStarted, false)
   );
@@ -47,6 +60,20 @@ export default function useRoomState() {
   const [players, setPlayers] = useState([]);
   const [chat, setChat] = useState([]);
   const [timerRemaining, setTimerRemaining] = useState(null);
+
+  const persistLeaderboardEntry = useCallback((entry) => {
+    if (!entry || typeof entry !== "object") {
+      sessionStorage.removeItem(STORAGE_KEYS.leaderboardEntry);
+      setLatestLeaderboardEntry(null);
+      return;
+    }
+    try {
+      sessionStorage.setItem(STORAGE_KEYS.leaderboardEntry, JSON.stringify(entry));
+    } catch {
+      // ignore storage quota issues
+    }
+    setLatestLeaderboardEntry(entry);
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, missionStarted ? "true" : "false");
@@ -91,6 +118,7 @@ export default function useRoomState() {
       setMissionStarted(true);
       sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
       setMissionCompleted(false);
+      persistLeaderboardEntry(null);
       if (!sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp)) {
         sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
       }
@@ -108,6 +136,7 @@ export default function useRoomState() {
       sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
       setMissionCompleted(false);
       setMissionElapsedSeconds(null);
+      persistLeaderboardEntry(null);
     };
 
     const handleEnigmeStatusUpdate = (payload = {}) => {
@@ -127,6 +156,20 @@ export default function useRoomState() {
       const normalized = progress && typeof progress === "object" ? progress : {};
       setEnigmesProgress(room, normalized);
       setEnigmesProgressState(normalized);
+    };
+
+    const handleLeaderboardEntryRecorded = (payload = {}) => {
+      if (payload === null) {
+        persistLeaderboardEntry(null);
+        return;
+      }
+      const entry =
+        payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "entry")
+          ? payload.entry
+          : payload;
+      if (entry && typeof entry === "object") {
+        persistLeaderboardEntry(entry);
+      }
     };
 
     setPlayers([]);
@@ -170,6 +213,7 @@ export default function useRoomState() {
     socket.on("missionReset", handleMissionReset);
     socket.on("enigmeStatusUpdate", handleEnigmeStatusUpdate);
     socket.on("enigmesProgressSync", handleEnigmesProgressSync);
+    socket.on("leaderboardEntryRecorded", handleLeaderboardEntryRecorded);
 
     return () => {
       socket.off("playersUpdate", handlePlayersUpdate);
@@ -181,8 +225,9 @@ export default function useRoomState() {
       socket.off("missionReset", handleMissionReset);
       socket.off("enigmeStatusUpdate", handleEnigmeStatusUpdate);
       socket.off("enigmesProgressSync", handleEnigmesProgressSync);
+      socket.off("leaderboardEntryRecorded", handleLeaderboardEntryRecorded);
     };
-  }, [navigate, room, username]);
+  }, [navigate, persistLeaderboardEntry, room, username]);
 
   const sendMessage = useCallback(
     (content) => {
@@ -208,8 +253,9 @@ export default function useRoomState() {
     setMissionStarted(true);
     setMissionCompleted(false);
     setMissionElapsedSeconds(null);
+    persistLeaderboardEntry(null);
     socket.emit("startMission", { room });
-  }, [room]);
+  }, [persistLeaderboardEntry, room]);
 
   const resetMission = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
@@ -221,10 +267,11 @@ export default function useRoomState() {
     sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
     setMissionCompleted(false);
     setMissionElapsedSeconds(null);
+    persistLeaderboardEntry(null);
     if (room) {
       socket.emit("resetMission", { room });
     }
-  }, [room]);
+  }, [persistLeaderboardEntry, room]);
 
   const updateAvatar = useCallback(
     (avatarId) => {
@@ -246,6 +293,27 @@ export default function useRoomState() {
       socket.emit("avatarUpdate", { room, username, avatar: trimmed || null });
     },
     [room, username]
+  );
+
+  const recordLeaderboardEntry = useCallback(
+    (entry, { broadcast = false } = {}) => {
+      if (!entry || typeof entry !== "object") {
+        persistLeaderboardEntry(null);
+        if (broadcast && room) {
+          socket.emit("leaderboardEntryRecorded", { room, entry: null });
+        }
+        return;
+      }
+      const normalizedEntry = {
+        ...entry,
+        players: Array.isArray(entry.players) ? entry.players : [],
+      };
+      persistLeaderboardEntry(normalizedEntry);
+      if (broadcast && room) {
+        socket.emit("leaderboardEntryRecorded", { room, entry: normalizedEntry });
+      }
+    },
+    [persistLeaderboardEntry, room]
   );
 
   const completedEnigmesCount = useMemo(
@@ -307,11 +375,14 @@ export default function useRoomState() {
       missionElapsedSeconds,
       avatar,
       updateAvatar,
+      latestLeaderboardEntry,
+      recordLeaderboardEntry,
     }),
     [
       allEnigmesCompleted,
       chat,
       completedEnigmesCount,
+      latestLeaderboardEntry,
       enigmesProgressState,
       isHost,
       missionCompleted,
@@ -320,6 +391,7 @@ export default function useRoomState() {
       players,
       resetMission,
       room,
+      recordLeaderboardEntry,
       sendMessage,
       startMission,
       timerRemaining,

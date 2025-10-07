@@ -79,10 +79,14 @@ export default function Preparation() {
           <h2>Transmission prioritaire : RASSEMBLEMENT DES AGENTS</h2>
 
           <div className="puzzle-instructions">
-            <h4>Briefing d'urgence</h4>
+          <h4>Numero de salle - appelez des renforts</h4>
+            <p>
+              En haut a gauche, votre numero de salle clignote : c'est le seul canal pour appeler d'autres ingenieurs. Partagez-le maintenant. Chaque nouvelle paire d'yeux et de cerveaux augmente vos chances de reparer la chaine avant l'ultime effondrement.
+            </p>
+            {/* <h4>Briefing d'urgence</h4>
             <p>
               Ingenieurs, ecoutez : la blockchain universelle se desagrege sous vos yeux. Des blocs ont ete effaces, d'autres corrompus, et le tissu de la confiance numerique se dechire. Ici, dans cette salle, commence votre dernier effort pour recoudre le monde. Vous etes la main qui tiendra le registre.
-            </p>
+            </p> */}
 
             <h4>Compteur Bitcoin - votre timer de survie</h4>
             <p>
@@ -91,10 +95,7 @@ export default function Preparation() {
               <img src={btcCounterImage} alt="Compteur Bitcoin affiché en haut de l'écran" />
             
 
-            <h4>Numero de salle - appelez des renforts</h4>
-            <p>
-              En haut a gauche, votre numero de salle clignote : c'est le seul canal pour appeler d'autres ingenieurs. Partagez-le maintenant. Chaque nouvelle paire d'yeux et de cerveaux augmente vos chances de reparer la chaine avant l'ultime effondrement.
-            </p>
+            
 
             <h4>Choisissez votre avatar</h4>
             <p>

@@ -3,8 +3,12 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const { addEntry, getTopEntries, getTotalEntries } = require('./db');
 
 const app = express();
+app.use(cors());
+app.use(express.json());
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
@@ -13,7 +17,7 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
 
-let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {} } }
+let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt } } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
@@ -21,7 +25,9 @@ const ensureRoom = (roomName) => {
       players: [],
       messages: [],
       timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
-      enigmes: {}
+      enigmes: {},
+      startedAt: null,
+      missionSummary: null
     };
   }
   return rooms[roomName];
@@ -33,6 +39,8 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
   if (reset || !room.timer.started) {
     room.timer.remaining = ROOM_DURATION_SECONDS;
     room.timer.started = true;
+    room.startedAt = Date.now();
+    room.missionSummary = null;
   }
 
   if (room.timer.interval) {
@@ -66,6 +74,8 @@ const stopTimerForRoom = (roomName) => {
 
   room.timer.started = false;
   room.timer.remaining = ROOM_DURATION_SECONDS;
+  room.startedAt = null;
+  room.missionSummary = null;
 };
 
 const leaveRoom = (socket, roomName) => {
@@ -174,6 +184,8 @@ io.on('connection', (socket) => {
     stopTimerForRoom(trimmedRoom);
     roomState.messages = [];
     roomState.enigmes = {};
+    roomState.startedAt = null;
+    roomState.missionSummary = null;
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
@@ -188,6 +200,16 @@ io.on('connection', (socket) => {
 
     const roomState = ensureRoom(trimmedRoom);
     roomState.enigmes[normalizedKey] = Boolean(completed);
+    const enigmeStatuses = Object.values(roomState.enigmes);
+    const allSolved = enigmeStatuses.length > 0 && enigmeStatuses.every(Boolean);
+    if (allSolved && roomState.startedAt && !roomState.missionSummary) {
+      const completedAt = Date.now();
+      const elapsedMs = completedAt - roomState.startedAt;
+      roomState.missionSummary = {
+        completedAt,
+        elapsedSeconds: Math.max(0, Math.round(elapsedMs / 1000))
+      };
+    }
     io.to(trimmedRoom).emit('enigmeStatusUpdate', {
       key: normalizedKey,
       completed: Boolean(completed)
@@ -217,12 +239,44 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
   });
 
+  socket.on('leaderboardEntryRecorded', ({ room, entry }) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+    io.to(trimmedRoom).emit('leaderboardEntryRecorded', entry ?? null);
+  });
+
   socket.on('disconnect', () => {
     const { room } = socket.data || {};
 
     leaveRoom(socket, room);
     console.log('🔴 Déconnexion');
   });
+});
+
+app.get('/api/leaderboard', (req, res) => {
+  const limit = Number.parseInt(req.query.limit, 10);
+  const entries = getTopEntries(limit);
+  res.json({ entries, total: getTotalEntries() });
+});
+
+app.post('/api/leaderboard', (req, res) => {
+  const { teamName, players, elapsedSeconds } = req.body ?? {};
+  if (!Array.isArray(players) || players.length === 0) {
+    return res.status(400).json({ error: 'players must be a non-empty array of names' });
+  }
+  if (!Number.isFinite(elapsedSeconds)) {
+    return res.status(400).json({ error: 'elapsedSeconds must be provided' });
+  }
+
+  try {
+    const entry = addEntry({ teamName, players, elapsedSeconds });
+    res.status(201).json({ entry, total: getTotalEntries() });
+  } catch (error) {
+    console.error('Failed to add leaderboard entry', error);
+    res.status(500).json({ error: 'Failed to store leaderboard entry' });
+  }
 });
 
 server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
