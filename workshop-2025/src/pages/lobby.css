@@ -147,6 +147,23 @@ body {
   margin: 0;
 }
 
+.game-room--blink {
+  animation: game-room-blink 1.2s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.65);
+}
+
+@keyframes game-room-blink {
+  0%,
+  60%,
+  100% {
+    opacity: 1;
+  }
+  30%,
+  80% {
+    opacity: 0.35;
+  }
+}
+
 .game-username {
   margin: 0.25rem 0 0;
   font-size: 0.95rem;
@@ -458,6 +475,25 @@ body {
   padding: 1.25rem;
   display: grid;
   gap: 0.75rem;
+}
+
+.puzzle-instructions__visual {
+  margin: 0.5rem 0 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  justify-content: center;
+  padding: 0.65rem;
+}
+
+.puzzle-instructions__visual img {
+  width: 100%;
+  height: auto;
+  max-width: 320px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.55));
 }
 
 .puzzle-instructions h3 {
