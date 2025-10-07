@@ -57,6 +57,44 @@ const emitToolsUpdate = (roomName) => {
   io.to(roomName).emit('toolsUpdate', { ...roomState.tools });
 };
 
+const assignToolsToPlayers = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  const toolIds = Object.keys(AVAILABLE_TOOLS);
+  const playerNames = (roomState.players || [])
+    .map((player) => (player && typeof player.username === 'string' ? player.username.trim() : ''))
+    .filter((name) => Boolean(name));
+
+  if (!toolIds.length) {
+    roomState.tools = {};
+    return;
+  }
+
+  if (!playerNames.length) {
+    toolIds.forEach((toolId) => {
+      roomState.tools[toolId] = { holder: null };
+    });
+    return;
+  }
+
+  const shuffledPlayers = playerNames
+    .map((name) => ({ name, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((entry) => entry.name);
+
+  toolIds.forEach((toolId, index) => {
+    const holder = shuffledPlayers[index % shuffledPlayers.length];
+    roomState.tools[toolId] = { holder };
+  });
+};
+
+const assignToolsForRoom = (roomName) => {
+  const roomState = ensureRoom(roomName);
+  assignToolsToPlayers(roomState);
+  emitToolsUpdate(roomName);
+};
+
 const updateEnigmeStatusForRoom = (roomName, key, completed) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
   if (!normalizedKey) {
@@ -173,6 +211,13 @@ const leaveRoom = (socket, roomName) => {
   if (socket.data?.username) {
     room.players = room.players.filter((player) => player.username !== socket.data.username);
     toolsUpdated = releaseToolsForUsername(room, socket.data.username) || toolsUpdated;
+    if (room.timer.started && room.players.length) {
+      assignToolsToPlayers(room);
+      toolsUpdated = true;
+    } else if (!room.timer.started && !room.players.length) {
+      room.tools = buildInitialToolsState();
+      toolsUpdated = true;
+    }
   }
 
   if (!room.players.length) {
@@ -258,6 +303,7 @@ io.on('connection', (socket) => {
     const roomState = ensureRoom(trimmedRoom);
     const shouldReset = !roomState.timer.started;
     const timerValue = startTimerForRoom(trimmedRoom, { reset: shouldReset });
+    assignToolsForRoom(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
@@ -282,58 +328,6 @@ io.on('connection', (socket) => {
     emitToolsUpdate(trimmedRoom);
   });
 
-  socket.on('tool:claim', ({ room, toolId } = {}, callback = () => {}) => {
-    const trimmedRoom = (room ?? '').trim();
-    const normalizedToolId = typeof toolId === 'string' ? toolId.trim() : '';
-    const username = (socket.data?.username ?? '').trim();
-    if (!trimmedRoom || !normalizedToolId || !username) {
-      callback({ ok: false, error: 'invalid_payload' });
-      return;
-    }
-
-    const roomState = ensureRoom(trimmedRoom);
-    const toolState = roomState.tools[normalizedToolId];
-    if (!toolState) {
-      callback({ ok: false, error: 'unknown_tool' });
-      return;
-    }
-
-    if (toolState.holder && toolState.holder !== username) {
-      callback({ ok: false, error: 'already_held', holder: toolState.holder });
-      return;
-    }
-
-    roomState.tools[normalizedToolId] = { holder: username };
-    emitToolsUpdate(trimmedRoom);
-    callback({ ok: true, holder: username });
-  });
-
-  socket.on('tool:release', ({ room, toolId } = {}, callback = () => {}) => {
-    const trimmedRoom = (room ?? '').trim();
-    const normalizedToolId = typeof toolId === 'string' ? toolId.trim() : '';
-    const username = (socket.data?.username ?? '').trim();
-    if (!trimmedRoom || !normalizedToolId || !username) {
-      callback({ ok: false, error: 'invalid_payload' });
-      return;
-    }
-
-    const roomState = ensureRoom(trimmedRoom);
-    const toolState = roomState.tools[normalizedToolId];
-    if (!toolState) {
-      callback({ ok: false, error: 'unknown_tool' });
-      return;
-    }
-
-    if (toolState.holder !== username) {
-      callback({ ok: false, error: 'not_holder', holder: toolState.holder });
-      return;
-    }
-
-    roomState.tools[normalizedToolId] = { holder: null };
-    emitToolsUpdate(trimmedRoom);
-    callback({ ok: true });
-  });
-
   socket.on('tool:fileFixer:repair', ({ room, content } = {}, callback = () => {}) => {
     const trimmedRoom = (room ?? '').trim();
     const username = (socket.data?.username ?? '').trim();
@@ -348,6 +342,10 @@ io.on('connection', (socket) => {
       callback({ ok: false, error: 'unknown_tool' });
       return;
     }
+    if (!toolState.holder) {
+      callback({ ok: false, error: 'unassigned' });
+      return;
+    }
 
     if (toolState.holder !== username) {
       callback({ ok: false, error: 'not_holder', holder: toolState.holder });
@@ -356,8 +354,8 @@ io.on('connection', (socket) => {
 
     const text = typeof content === 'string' ? content : '';
     const containsSignature = text.includes('block_0365468.hash');
-    const randomMessage = Math.random() < 0.5 ? 'réparer' : 'réparation impossible';
-    const message = containsSignature ? 'réparer' : randomMessage;
+    const randomMessage = Math.random() < 0.5 ? 'reparation impossible' : 'repare';
+    const message = containsSignature ? 'repare' : randomMessage;
     const alreadyCompleted = roomState.enigmes.enigme1 === true;
 
     if (containsSignature && !alreadyCompleted) {
@@ -444,3 +442,4 @@ app.post('/api/leaderboard', (req, res) => {
 });
 
 server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
+

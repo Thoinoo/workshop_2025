@@ -358,38 +358,6 @@ export default function useRoomState() {
     [room, username]
   );
 
-  const claimTool = useCallback(
-    (toolId) =>
-      new Promise((resolve) => {
-        const normalizedToolId = typeof toolId === "string" ? toolId.trim() : "";
-        if (!room || !normalizedToolId) {
-          resolve({ ok: false, error: "missing_room_or_tool" });
-          return;
-        }
-
-        socket.emit("tool:claim", { room, toolId: normalizedToolId }, (response = {}) => {
-          resolve(response);
-        });
-      }),
-    [room]
-  );
-
-  const releaseTool = useCallback(
-    (toolId) =>
-      new Promise((resolve) => {
-        const normalizedToolId = typeof toolId === "string" ? toolId.trim() : "";
-        if (!room || !normalizedToolId) {
-          resolve({ ok: false, error: "missing_room_or_tool" });
-          return;
-        }
-
-        socket.emit("tool:release", { room, toolId: normalizedToolId }, (response = {}) => {
-          resolve(response);
-        });
-      }),
-    [room]
-  );
-
   const useFileFixer = useCallback(
     (content) =>
       new Promise((resolve) => {
@@ -544,8 +512,6 @@ export default function useRoomState() {
       latestLeaderboardEntry,
       recordLeaderboardEntry,
       tools: toolsState,
-      claimTool,
-      releaseTool,
       useFileFixer,
     }),
     [
@@ -570,8 +536,6 @@ export default function useRoomState() {
       username,
       avatar,
       updateAvatar,
-      claimTool,
-      releaseTool,
       useFileFixer,
     ]
   );
