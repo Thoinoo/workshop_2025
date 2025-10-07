@@ -41,6 +41,11 @@ export default function Enigme2() {
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 2</h2>
+          {isCompleted ? (
+            <div className="enigme-post-completion">
+              écrire ici les informations post réussite de l'énigme
+            </div>
+          ) : null}
           <p>
             La base de données est corrompu trouver un moyen de stocker les données de manière sécurisée.
           </p>

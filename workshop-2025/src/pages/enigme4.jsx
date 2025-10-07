@@ -103,6 +103,11 @@ export default function Enigme4() {
             )}
           </p>
           <h2>Enigme 4</h2>
+          {isCompleted ? (
+            <div className="enigme-post-completion">
+              écrire ici les informations post réussite de l'énigme
+            </div>
+          ) : null}
 
           <div className="container">
             <h1>Logistique : repartissez les palettes correctement</h1>
