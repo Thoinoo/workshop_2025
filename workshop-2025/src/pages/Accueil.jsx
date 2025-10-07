@@ -73,7 +73,7 @@ export default function Accueil() {
           </p>
         </div>
         <div className="game-header-section game-header-section--timer">
-          <div className="home-code-badge">Mission top secret</div>
+          <div className="home-code-badge">Crypto breakdown</div>
         </div>
         <div className="game-header-section game-header-section--actions">
           

@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import GenesisTerminal from "../components/GenesisTerminal";
 
 export default function Enigme1() {
   const navigate = useNavigate();
@@ -55,14 +56,16 @@ export default function Enigme1() {
 
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
-            <ul>
-              <li>Partagez vos decouvertes dans le chat pour faire progresser l'equipe.</li>
-              <li>Notez les indices importants et confrontez vos hypotheses.</li>
-              <li>
-                Lorsque vous etes prets, contactez le maitre du jeu pour valider votre reponse.
-              </li>
-            </ul>
+            <p>
+              Équipe, attention. Le réseau global vient de lever un drapeau rouge : la blockchain universelle est cassée. Certains blocs ont disparu, et sans le tout premier — le Bloc Genesis — le registre est orphelin : aucune transaction ne peut être vérifiée, aucun compte ne peut retrouver son historique. Vous êtes les derniers ingénieurs capables de réparer ça.
+
+Devant vous se trouve un terminal sécurisé, dernier vestige d’un nœud intact. Satoshi a laissé un indice. Votre mission : retrouver le Bloc Genesis, extraire le message caché qu’il contient et vérifier son intégrité. Sans ce bloc, le réseau restera en panne et les valeurs tomberont dans l’oubli.
+
+Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour lister, cat pour lire, decode pour déchiffrer, et hashinfo pour vérifier l’intégrité d’un bloc. Fouillez le répertoire genesis/, trouvez le fichier chiffré, décodez-le et prouvez que le bloc est authentique.
+              </p>
           </div>
+
+          <GenesisTerminal />
         </section>
 
         <aside className="chat-panel">
