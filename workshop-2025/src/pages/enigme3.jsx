@@ -7,7 +7,7 @@ import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 
-export default function Enigme1() {
+export default function Enigme3() {
   const navigate = useNavigate();
   const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
 
@@ -20,15 +20,12 @@ export default function Enigme1() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <Timer /> 
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme1" />
+          <EnigmesGridMenu active="enigme3" />
         </div>
-
         <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
-
         <div className="game-header-section game-header-section--actions">
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
@@ -48,21 +45,26 @@ export default function Enigme1() {
               "Preparez-vous a resoudre la premiere enigme."
             )}
           </p>
-          <h2>Enigme 1</h2>
+          <h2>Enigme 3</h2>
+
           <p>
-            Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
-            compte et l'echange d'idees avec votre equipe sera determinant.
+            Sur le premier coffre : "J'avais 10 pieces, j'en perds 8."<br />
+            Sur le deuxieme coffre : "J'ai 5 billets, je les partage : 5 a 5."<br />
+            Sur le troisieme coffre : "J'achete 2 lingots a 7 pieces chacun."<br />
+            Sur le quatrieme coffre : "Je cache 20 lingots, mais on m'en retrouve 3."<br />
+            Sur le cinquieme coffre : "Je trouve 3 sacs de 7 pieces chacun."<br />
+            Sur le sixieme coffre : "J'avais 12 pieces, j'en donne 7."<br />
+            <strong>Indice :</strong> Nous recherchons un mot.
           </p>
 
-          <div className="puzzle-instructions">
-            <h3>Briefing</h3>
-            <ul>
-              <li>Partagez vos decouvertes dans le chat pour faire progresser l'equipe.</li>
-              <li>Notez les indices importants et confrontez vos hypotheses.</li>
-              <li>
-                Lorsque vous etes prets, contactez le maitre du jeu pour valider votre reponse.
-              </li>
-            </ul>
+          <div className="reponse-zone">
+            <input type="text" placeholder="Ecris le mot secret" className="reponse-input" />
+            <button
+              className="reponse-button"
+              onClick={() => alert("Verification de la reponse (a implementer)")}
+            >
+              REPONSE
+            </button>
           </div>
         </section>
 

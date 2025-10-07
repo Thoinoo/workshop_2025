@@ -7,7 +7,7 @@ import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 
-export default function Enigme1() {
+export default function Enigme2() {
   const navigate = useNavigate();
   const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
 
@@ -20,9 +20,8 @@ export default function Enigme1() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <Timer /> 
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme1" />
+          <EnigmesGridMenu active="enigme2" />
         </div>
 
         <div className="game-header-section game-header-section--timer">
@@ -41,27 +40,24 @@ export default function Enigme1() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, decryptez les indices pour progresser vers la
-                prochaine etape.
+                Agent <strong>{username}</strong>, restez concentre pour franchir ce nouvel obstacle.
               </>
             ) : (
-              "Preparez-vous a resoudre la premiere enigme."
+              "Consolidez votre strategie pour attaquer l'enigme numero deux."
             )}
           </p>
-          <h2>Enigme 1</h2>
+          <h2>Enigme 2</h2>
           <p>
-            Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
-            compte et l'echange d'idees avec votre equipe sera determinant.
+            Le reseau ennemi brouille les communications. Rassemblez les fragments d'informations et
+            reconstruisez le message cache avant que la connexion ne soit perdue.
           </p>
 
           <div className="puzzle-instructions">
-            <h3>Briefing</h3>
+            <h3>Objectifs</h3>
             <ul>
-              <li>Partagez vos decouvertes dans le chat pour faire progresser l'equipe.</li>
-              <li>Notez les indices importants et confrontez vos hypotheses.</li>
-              <li>
-                Lorsque vous etes prets, contactez le maitre du jeu pour valider votre reponse.
-              </li>
+              <li>Identifiez les sequences qui se repetent dans les transmissions.</li>
+              <li>Associez chaque symbole a son code couleur pour reveler le message.</li>
+              <li>Validez votre hypothese aupres du maitre du jeu pour passer a l'etape suivante.</li>
             </ul>
           </div>
         </section>

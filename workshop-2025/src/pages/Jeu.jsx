@@ -1,95 +1,61 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
-import Timer from "../components/Timer";
-import socket from "../socket";
 import "./lobby.css";
+import BombeTimer from "../components/BombeTimer";
+import useRoomState from "../hooks/useRoomState";
+import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Jeu() {
   const navigate = useNavigate();
-  const username = sessionStorage.getItem("pseudo");
-  const room = sessionStorage.getItem("room");
-
-  const [players, setPlayers] = useState([]);
-  const [chat, setChat] = useState(() => {
-    try {
-      const stored = sessionStorage.getItem("chatHistory");
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error("Unable to read chat history from sessionStorage", error);
-      return [];
-    }
-  });
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+    useRoomState();
 
   useEffect(() => {
-    if (!username || !room) {
-      navigate("/");
-      return () => {};
+    if (!missionStarted) {
+      navigate("/preparation", { replace: true });
     }
-    socket.emit("joinRoom", { username, room });
-
-    socket.on("playersUpdate", setPlayers);
-    socket.on("newMessage", (msg) =>
-      setChat((prev) => {
-        const updated = [...prev, msg];
-        try {
-          sessionStorage.setItem("chatHistory", JSON.stringify(updated));
-        } catch (error) {
-          console.error("Unable to persist chat history in sessionStorage", error);
-        }
-        return updated;
-      })
-    );
-
-    return () => {
-      socket.off("playersUpdate");
-      socket.off("newMessage");
-    };
-    }, [navigate, room, username]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem("chatHistory", JSON.stringify(chat));
-    } catch (error) {
-      console.error("Unable to persist chat history in sessionStorage", error);
-    }
-  }, [chat]);
-
-  const sendMessage = (content) => {
-    const trimmed = content.trim();
-    if (trimmed) {
-      socket.emit("chatMessage", { room, username, message: trimmed });
-    }
-  };
+  }, [missionStarted, navigate]);
 
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
+        <div className="game-header-section game-header-section--info">
+          <EnigmesGridMenu />
           <p className="game-room">Salle {room}</p>
-          {username && <p className="game-username">Connecté en tant que <strong>{username}</strong></p>}
         </div>
-        <Timer />
-        <button className="game-primary" onClick={() => navigate("/enigme1")}>
-          Accéder à l'énigme 1
-        </button>
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+        <div className="game-header-section game-header-section--actions">
+          <button className="game-secondary" onClick={() => navigate("/")}>
+            Retour a l'accueil
+          </button>
+        </div>
       </header>
 
       <div className="game-layout">
         <section className="game-card">
-          <h2>Prêt pour la prochaine étape ?</h2>
+          {username ? (
+            <p className="game-username">
+              Agent <strong>{username}</strong>, coordonnez votre equipe avant de lancer une nouvelle
+              enigme.
+            </p>
+          ) : (
+            <p className="game-username">
+              Preparez votre equipe et choisissez l'enigme ideale pour debuter la mission.
+            </p>
+          )}
+          <h2>Pret pour la prochaine etape&nbsp;?</h2>
           <p>
-            Communiquez avec votre équipe dans le chat pour élaborer une stratégie et
-            plongez-vous ensuite dans la première énigme.
+            Communiquez avec votre equipe dans le chat pour elaborer une strategie avant de vous
+            lancer sur l'enigme de votre choix.
           </p>
-          <button className="game-secondary" onClick={() => navigate("/enigme1")}>
-            Démarrer l'énigme 1
-          </button>
         </section>
 
         <aside className="chat-panel">
-        <PlayersList players={players} />
+          <PlayersList players={players} />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
