@@ -15,14 +15,21 @@ import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 export default function Enigme2() {
   const navigate = useNavigate();
-  const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
+    useRoomState();
   const isCompleted = useEnigmeCompletion("enigme2", room);
 
   useEffect(() => {
-    if (!missionStarted) {
+    if (!missionStarted && !missionFailed) {
       navigate("/preparation", { replace: true });
     }
-  }, [missionStarted, navigate]);
+  }, [missionFailed, missionStarted, navigate]);
+
+  useEffect(() => {
+    if (missionFailed && location.pathname !== "/defaite") {
+      navigate("/defaite", { replace: true });
+    }
+  }, [location.pathname, missionFailed, navigate]);
 
   const handleDebugComplete = () => {
     if (!room || isCompleted) {

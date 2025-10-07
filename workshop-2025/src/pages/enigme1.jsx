@@ -14,7 +14,7 @@ import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 export default function Enigme1() {
   const navigate = useNavigate();
-  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
     useRoomState();
   const isCompleted = useEnigmeCompletion("enigme1", room);
   const [openedHints, setOpenedHints] = useState({});
@@ -34,10 +34,16 @@ export default function Enigme1() {
   };
 
   useEffect(() => {
-    if (!missionStarted) {
+    if (!missionStarted && !missionFailed) {
       navigate("/preparation", { replace: true });
     }
-  }, [missionStarted, navigate]);
+  }, [missionFailed, missionStarted, navigate]);
+
+  useEffect(() => {
+    if (missionFailed && location.pathname !== "/defaite") {
+      navigate("/defaite", { replace: true });
+    }
+  }, [location.pathname, missionFailed, navigate]);
 
   useEffect(() => {
     if (isCompleted && typeof window !== "undefined") {
@@ -191,8 +197,3 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
     </div>
   );
 }
-
-
-
-
-

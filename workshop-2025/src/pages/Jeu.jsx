@@ -24,16 +24,17 @@ const TYPE_SPEED_MESSAGE = 20;
 
 export default function Jeu() {
   const navigate = useNavigate();
-  const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
+    useRoomState();
   const [displayedTitle, setDisplayedTitle] = useState("");
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [titleCompleted, setTitleCompleted] = useState(false);
 
   useEffect(() => {
-    if (!missionStarted) {
+    if (!missionStarted && !missionFailed) {
       navigate("/preparation", { replace: true });
     }
-  }, [missionStarted, navigate]);
+  }, [missionFailed, missionStarted, navigate]);
 
   useEffect(() => {
     let cancelled = false;

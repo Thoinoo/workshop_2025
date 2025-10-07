@@ -13,7 +13,7 @@ import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme3() {
   const navigate = useNavigate();
-  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
     useRoomState();
   const isCompleted = useEnigmeCompletion("enigme3", room);
   const [answer, setAnswer] = useState("");
@@ -28,10 +28,16 @@ export default function Enigme3() {
   };
 
   useEffect(() => {
-    if (!missionStarted) {
+    if (!missionStarted && !missionFailed) {
       navigate("/preparation", { replace: true });
     }
-  }, [missionStarted, navigate]);
+  }, [missionFailed, missionStarted, navigate]);
+
+  useEffect(() => {
+    if (missionFailed && location.pathname !== "/defaite") {
+      navigate("/defaite", { replace: true });
+    }
+  }, [location.pathname, missionFailed, navigate]);
 
   const handleSubmit = () => {
     const normalized = answer.trim().toLowerCase();

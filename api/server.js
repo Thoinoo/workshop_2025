@@ -15,7 +15,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
+const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 3);
 
 let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt } } }
 
@@ -27,7 +27,8 @@ const ensureRoom = (roomName) => {
       timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
       enigmes: {},
       startedAt: null,
-      missionSummary: null
+      missionSummary: null,
+      missionFailed: false
     };
   }
   return rooms[roomName];
@@ -41,6 +42,7 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
     room.timer.started = true;
     room.startedAt = Date.now();
     room.missionSummary = null;
+    room.missionFailed = false;
   }
 
   if (room.timer.interval) {
@@ -54,6 +56,20 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
     if (room.timer.remaining <= 0) {
       clearInterval(room.timer.interval);
       room.timer.interval = null;
+      room.timer.started = false;
+      room.timer.remaining = 0;
+      const completedAt = Date.now();
+      const elapsedMs = room.startedAt ? completedAt - room.startedAt : 0;
+      room.missionSummary = {
+        completedAt,
+        elapsedSeconds: Math.max(0, Math.round(elapsedMs / 1000)),
+        status: "failed"
+      };
+      room.startedAt = null;
+      room.missionFailed = true;
+      io.to(roomName).emit('missionFailed', {
+        elapsedSeconds: room.missionSummary.elapsedSeconds
+      });
     }
   }, 100);
 
@@ -76,6 +92,7 @@ const stopTimerForRoom = (roomName) => {
   room.timer.remaining = ROOM_DURATION_SECONDS;
   room.startedAt = null;
   room.missionSummary = null;
+  room.missionFailed = false;
 };
 
 const leaveRoom = (socket, roomName) => {
@@ -148,6 +165,8 @@ io.on('connection', (socket) => {
       messages: [...roomState.messages],
       timer: timerValue,
       missionStarted: roomState.timer.started,
+      missionFailed: roomState.missionFailed,
+      missionSummary: roomState.missionSummary ? { ...roomState.missionSummary } : null,
       enigmes: { ...roomState.enigmes }
     });
 
@@ -186,6 +205,7 @@ io.on('connection', (socket) => {
     roomState.enigmes = {};
     roomState.startedAt = null;
     roomState.missionSummary = null;
+    roomState.missionFailed = false;
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});

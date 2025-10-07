@@ -16,12 +16,14 @@ const STORAGE_KEYS = {
   missionStartTimestamp: "missionStartTimestamp",
   missionElapsedSeconds: "missionElapsedSeconds",
   missionCompleted: "missionCompleted",
+  missionFailed: "missionFailed",
   avatar: "avatar",
   leaderboardEntry: "leaderboardEntry",
 };
 
 const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4"];
 
+let lastDefeatRedirectSource = null;
 const readBoolean = (key, fallback = false) => sessionStorage.getItem(key) === "true" || fallback;
 
 export default function useRoomState() {
@@ -49,6 +51,9 @@ export default function useRoomState() {
   const [missionCompleted, setMissionCompleted] = useState(() =>
     readBoolean(STORAGE_KEYS.missionCompleted, false)
   );
+  const [missionFailed, setMissionFailed] = useState(() =>
+    readBoolean(STORAGE_KEYS.missionFailed, false)
+  );
   const [missionElapsedSeconds, setMissionElapsedSeconds] = useState(() => {
     const stored = sessionStorage.getItem(STORAGE_KEYS.missionElapsedSeconds);
     return stored ? Number(stored) : null;
@@ -75,9 +80,46 @@ export default function useRoomState() {
     setLatestLeaderboardEntry(entry);
   }, []);
 
+  const recordMissionFailure = useCallback(
+    (elapsedSeconds = null) => {
+      let normalizedElapsed = null;
+      if (Number.isFinite(elapsedSeconds)) {
+        normalizedElapsed = Math.max(0, Math.round(Number(elapsedSeconds)));
+      } else {
+        const startTsRaw = sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp);
+        const startTs = startTsRaw ? Number(startTsRaw) : null;
+        if (Number.isFinite(startTs)) {
+          normalizedElapsed = Math.max(0, Math.round((Date.now() - startTs) / 1000));
+        }
+      }
+
+      if (Number.isFinite(normalizedElapsed)) {
+        sessionStorage.setItem(STORAGE_KEYS.missionElapsedSeconds, String(normalizedElapsed));
+        setMissionElapsedSeconds(normalizedElapsed);
+      } else {
+        sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
+        setMissionElapsedSeconds(null);
+      }
+
+      sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
+      setMissionStarted(false);
+      sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+      setMissionCompleted(false);
+      sessionStorage.setItem(STORAGE_KEYS.missionFailed, "true");
+      setMissionFailed(true);
+      sessionStorage.removeItem(STORAGE_KEYS.missionStartTimestamp);
+      persistLeaderboardEntry(null);
+    },
+    [persistLeaderboardEntry]
+  );
+
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, missionStarted ? "true" : "false");
   }, [missionStarted]);
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.missionFailed, missionFailed ? "true" : "false");
+  }, [missionFailed]);
 
   useEffect(() => {
     if (!username || !room) {
@@ -118,6 +160,8 @@ export default function useRoomState() {
       setMissionStarted(true);
       sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
       setMissionCompleted(false);
+      sessionStorage.setItem(STORAGE_KEYS.missionFailed, "false");
+      setMissionFailed(false);
       persistLeaderboardEntry(null);
       if (!sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp)) {
         sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
@@ -135,6 +179,8 @@ export default function useRoomState() {
       sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
       sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
       setMissionCompleted(false);
+      sessionStorage.setItem(STORAGE_KEYS.missionFailed, "false");
+      setMissionFailed(false);
       setMissionElapsedSeconds(null);
       persistLeaderboardEntry(null);
     };
@@ -248,10 +294,12 @@ export default function useRoomState() {
 
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, "true");
     sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+    sessionStorage.setItem(STORAGE_KEYS.missionFailed, "false");
     sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
     sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
     setMissionStarted(true);
     setMissionCompleted(false);
+    setMissionFailed(false);
     setMissionElapsedSeconds(null);
     persistLeaderboardEntry(null);
     socket.emit("startMission", { room });
@@ -266,6 +314,8 @@ export default function useRoomState() {
     sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
     sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
     setMissionCompleted(false);
+    sessionStorage.setItem(STORAGE_KEYS.missionFailed, "false");
+    setMissionFailed(false);
     setMissionElapsedSeconds(null);
     persistLeaderboardEntry(null);
     if (room) {
@@ -329,6 +379,57 @@ export default function useRoomState() {
   );
 
   useEffect(() => {
+    if (!missionStarted || missionCompleted || missionFailed) {
+      return;
+    }
+    if (!Number.isFinite(timerRemaining)) {
+      return;
+    }
+    if (timerRemaining > 0.05) {
+      return;
+    }
+
+    const startTsRaw = sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp);
+    const startTs = startTsRaw ? Number(startTsRaw) : null;
+    if (Number.isFinite(startTs)) {
+      const elapsed = Math.max(0, Math.round((Date.now() - startTs) / 1000));
+      sessionStorage.setItem(STORAGE_KEYS.missionElapsedSeconds, String(elapsed));
+      setMissionElapsedSeconds(elapsed);
+    }
+    sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+    setMissionCompleted(false);
+    sessionStorage.setItem(STORAGE_KEYS.missionFailed, "true");
+    setMissionFailed(true);
+    sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
+    setMissionStarted(false);
+    persistLeaderboardEntry(null);
+  }, [
+    missionStarted,
+    missionCompleted,
+    missionFailed,
+    timerRemaining,
+    persistLeaderboardEntry,
+  ]);
+
+  useEffect(() => {
+    if (!missionFailed) {
+      lastDefeatRedirectSource = null;
+      return;
+    }
+    if (location.pathname === "/defaite") {
+      lastDefeatRedirectSource = null;
+      return;
+    }
+    if (lastDefeatRedirectSource === location.pathname) {
+      return;
+    }
+    lastDefeatRedirectSource = location.pathname;
+    Promise.resolve().then(() => {
+      navigate("/defaite", { replace: true });
+    });
+  }, [location.pathname, missionFailed, navigate]);
+
+  useEffect(() => {
     if (!missionStarted || !room) {
       return;
     }
@@ -372,6 +473,7 @@ export default function useRoomState() {
       completedEnigmesCount,
       allEnigmesCompleted,
       missionCompleted,
+      missionFailed,
       missionElapsedSeconds,
       avatar,
       updateAvatar,
@@ -386,6 +488,7 @@ export default function useRoomState() {
       enigmesProgressState,
       isHost,
       missionCompleted,
+      missionFailed,
       missionElapsedSeconds,
       missionStarted,
       players,
