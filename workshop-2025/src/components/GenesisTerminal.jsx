@@ -73,7 +73,17 @@ const FILE_SYSTEM = {
     "backup_readme.md": "file",
     "archive_genesis_v2.zip": "file",
     "secure-note.enc": "file",
-    "block_final.hash": "file",
+    "block_0365460.hash": "file",
+    "block_0365461.hash": "file",
+    "block_0365462.hash": "file",
+    "block_0365463.hash": "file",
+    "block_0365464.hash": "file",
+    "block_0365465.hash": "file",
+    "block_0365466.hash": "file",
+    "block_0365467.hash": "file",
+    "block_0365468a.hash": "file",
+    "block_0365468.hash": "file",
+    "block_0365469.hash": "file",
     "block_0001.dat": "file",
     "times_reference.txt": "file",
     docs: "dir",
@@ -89,7 +99,7 @@ const FILE_SYSTEM = {
 const FILE_DATA = {
   "readme.txt": {
     content:
-      "Satoshi's first message is hidden in the genesis folder, maybe you can find some notes.\nTo rebuild the chain, you must find the truth in the Times...",
+      "Satoshi's first message is hidden in the genesis folder, maybe you can find some [note].\nTo rebuild the chain, you must find the truth in the Times...",
   },
   "genesis/README.txt": {
     content:
@@ -148,9 +158,49 @@ const FILE_DATA = {
   "genesis/secure-note.enc": {
     content: "n qhfnm xnt rts gdq",
   },
-  "genesis/block_final.hash": {
+  "genesis/block_0365460.hash": {
+    content:
+      "Candidate hash file: 0365460\nIssue: nonce overflow flagged.\nStatus: discard.",
+  },
+  "genesis/block_0365461.hash": {
+    content:
+      "Candidate hash file: 0365461\nIssue: mismatched merkle root.\nStatus: invalid.",
+  },
+  "genesis/block_0365462.hash": {
+    content:
+      "Candidate hash file: 0365462\nIssue: timestamp drift beyond 2h.\nStatus: invalid.",
+  },
+  "genesis/block_0365463.hash": {
+    content:
+      "Candidate hash file: 0365463\nIssue: difficulty bits corrupted.\nStatus: invalid.",
+  },
+  "genesis/block_0365464.hash": {
+    content:
+      "Candidate hash file: 0365464\nIssue: header checksum mismatch.\nStatus: invalid.",
+  },
+  "genesis/block_0365465.hash": {
+    content:
+      "Candidate hash file: 0365465\nIssue: merkle root truncated.\nStatus: invalid.",
+  },
+  "genesis/block_0365466.hash": {
+    content:
+      "Candidate hash file: 0365466\nIssue: leading zeros count wrong.\nStatus: invalid.",
+  },
+  "genesis/block_0365467.hash": {
+    content:
+      "Candidate hash file: 0365467\nIssue: genesis headline missing.\nStatus: invalid.",
+  },
+  "genesis/block_0365468a.hash": {
+    content:
+      "Candidate hash file: 0365468a\nIssue: appended padding detected.\nStatus: invalid.",
+  },
+  "genesis/block_0365468.hash": {
     content:
       "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f\nReference: Chancellor on brink of second bailout for banks.",
+  },
+  "genesis/block_0365469.hash": {
+    content:
+      "Candidate hash file: 0365469\nIssue: proof-of-work target unmet.\nStatus: invalid.",
   },
   "genesis/block_0001.dat": {
     content:
@@ -170,6 +220,66 @@ const FILE_DATA = {
 
 const HASH_RESPONSES = {
   "genesis/block0.dat": [
+    "Recovered hash record:",
+    "Candidate ID: 0365460",
+    "Analysis: Nonce overflow detected; checksum rejected.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365460.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365460",
+    "Analysis: Nonce overflow detected; checksum rejected.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365461.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365461",
+    "Analysis: Merkle root mismatch.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365462.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365462",
+    "Analysis: Timestamp drift exceeds consensus tolerance.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365463.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365463",
+    "Analysis: Difficulty bits corrupted in header.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365464.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365464",
+    "Analysis: Header checksum mismatch detected.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365465.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365465",
+    "Analysis: Merkle root truncated; incomplete data.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365466.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365466",
+    "Analysis: Leading zero requirement not satisfied.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365467.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365467",
+    "Analysis: Embedded headline missing.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365468a.hash": [
+    "Recovered hash record:",
+    "Candidate ID: 0365468a",
+    "Analysis: Suspicious padding appended to payload.",
+    "Status: INVALID [CORRUPTED]",
+  ],
+  "genesis/block_0365468.hash": [
     "Block #0 hash:",
     "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
     "Status: VERIFIED [OK]",
@@ -179,11 +289,11 @@ const HASH_RESPONSES = {
     'Genesis Block rebuilt successfully.',
     'You may proceed to Block #1: "The Chain of Trust"',
   ],
-  "genesis/block_final.hash": [
+  "genesis/block_0365469.hash": [
     "Recovered hash record:",
-    "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-    "Cross-reference: Chancellor on brink of second bailout for banks.",
-    "Status: VERIFIED [OK]",
+    "Candidate ID: 0365469",
+    "Analysis: Proof-of-work target unmet.",
+    "Status: INVALID [CORRUPTED]",
   ],
 };
 
