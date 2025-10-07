@@ -26,16 +26,16 @@ const ensureRoom = (roomName) => {
   return rooms[roomName];
 };
 
-const startTimerForRoom = (roomName) => {
+const startTimerForRoom = (roomName, { reset = false } = {}) => {
   const room = ensureRoom(roomName);
+
+  if (reset || !room.timer.started) {
+    room.timer.remaining = ROOM_DURATION_SECONDS;
+    room.timer.started = true;
+  }
 
   if (room.timer.interval) {
     return room.timer.remaining;
-  }
-
-  if (!room.timer.started) {
-    room.timer.remaining = ROOM_DURATION_SECONDS;
-    room.timer.started = true;
   }
 
   room.timer.interval = setInterval(() => {
@@ -54,12 +54,17 @@ const startTimerForRoom = (roomName) => {
 
 const stopTimerForRoom = (roomName) => {
   const room = rooms[roomName];
-  if (!room || !room.timer?.interval) {
+  if (!room || !room.timer) {
     return;
   }
 
-  clearInterval(room.timer.interval);
-  room.timer.interval = null;
+  if (room.timer.interval) {
+    clearInterval(room.timer.interval);
+    room.timer.interval = null;
+  }
+
+  room.timer.started = false;
+  room.timer.remaining = ROOM_DURATION_SECONDS;
 };
 
 const leaveRoom = (socket, roomName) => {
@@ -110,7 +115,10 @@ io.on('connection', (socket) => {
     socket.data.room = trimmedRoom;
 
     const roomState = ensureRoom(trimmedRoom);
-    const timerValue = roomState.timer.interval ? roomState.timer.remaining : startTimerForRoom(trimmedRoom);
+    if (roomState.timer.started && !roomState.timer.interval) {
+      startTimerForRoom(trimmedRoom);
+    }
+    const timerValue = roomState.timer.remaining;
 
     roomState.players = roomState.players.filter((player) => player !== trimmedUsername);
     roomState.players.push(trimmedUsername);
@@ -118,11 +126,15 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
     socket.emit('chatHistory', roomState.messages);
     socket.emit('timerUpdate', timerValue);
+    if (roomState.timer.started) {
+      socket.emit('missionStarted');
+    }
 
     callback({
       players: roomState.players,
       messages: roomState.messages,
-      timer: timerValue
+      timer: timerValue,
+      missionStarted: roomState.timer.started
     });
 
     console.log(`${trimmedUsername} a rejoint la salle ${trimmedRoom}`);
@@ -133,6 +145,32 @@ io.on('connection', (socket) => {
     const roomState = ensureRoom(room);
     roomState.messages.push(msg);
     io.to(room).emit('newMessage', msg);
+  });
+
+  socket.on('startMission', ({ room }) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const shouldReset = !roomState.timer.started;
+    const timerValue = startTimerForRoom(trimmedRoom, { reset: shouldReset });
+    io.to(trimmedRoom).emit('missionStarted');
+    io.to(trimmedRoom).emit('timerUpdate', timerValue);
+  });
+
+  socket.on('resetMission', ({ room }) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    stopTimerForRoom(trimmedRoom);
+    roomState.messages = [];
+    io.to(trimmedRoom).emit('missionReset');
+    io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
   });
 
   socket.on('disconnect', () => {

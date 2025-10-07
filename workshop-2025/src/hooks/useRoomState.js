@@ -97,6 +97,7 @@ export default function useRoomState() {
     socket.on("chatHistory", handleChatHistory);
     socket.on("timerUpdate", handleTimerUpdate);
     socket.on("missionStarted", handleMissionStarted);
+    socket.on("startMission", handleMissionStarted);
     socket.on("missionReset", handleMissionReset);
     socket.on("enigmeStatusUpdate", handleEnigmeStatusUpdate);
 
@@ -106,6 +107,7 @@ export default function useRoomState() {
       socket.off("chatHistory", handleChatHistory);
       socket.off("timerUpdate", handleTimerUpdate);
       socket.off("missionStarted", handleMissionStarted);
+      socket.off("startMission", handleMissionStarted);
       socket.off("missionReset", handleMissionReset);
       socket.off("enigmeStatusUpdate", handleEnigmeStatusUpdate);
     };
