@@ -80,6 +80,11 @@ export default function Accueil() {
     sessionStorage.setItem("room", roomCode.trim());
     sessionStorage.setItem("isHost", isHost ? "true" : "false");
     sessionStorage.setItem("missionStarted", "false");
+    sessionStorage.setItem("missionFailed", "false");
+    sessionStorage.setItem("missionCompleted", "false");
+    sessionStorage.removeItem("missionElapsedSeconds");
+    sessionStorage.removeItem("missionStartTimestamp");
+    sessionStorage.removeItem("leaderboardEntry");
   };
 
   const handleJoinSubmit = (event) => {

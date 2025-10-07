@@ -15,7 +15,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 3);
+const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
 
 let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt } } }
 

@@ -67,7 +67,7 @@ export default function Defeat() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
-          <button className="game-secondary" onClick={() => navigate("/preparation")}>
+          <button className="game-secondary" onClick={() => navigate("/")}>
             Retour au QG
           </button>
           {isHost ? (
