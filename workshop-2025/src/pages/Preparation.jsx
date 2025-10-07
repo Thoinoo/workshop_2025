@@ -6,6 +6,7 @@ import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import btcCounterImage from "../assets/btc_counter.png";
 import enigmGridImage from "../assets/enigm_grid.png";
+import { AVATARS, getAvatarById } from "../constants/avatars";
 import "./lobby.css";
 
 export default function Preparation() {
@@ -20,7 +21,10 @@ export default function Preparation() {
     isHost,
     missionStarted,
     startMission,
+    avatar,
+    updateAvatar,
   } = useRoomState();
+  const selectedAvatar = getAvatarById(avatar);
 
   const infoMessage = useMemo(() => {
     if (players.length <= 1) {
@@ -43,6 +47,7 @@ export default function Preparation() {
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <p className="game-room game-room--blink">Salle {room}</p>
+          
           <p className="game-username">
             {username ? (
               <>
@@ -90,6 +95,30 @@ export default function Preparation() {
             <p>
               En haut a gauche, votre numero de salle clignote : c'est le seul canal pour appeler d'autres ingenieurs. Partagez-le maintenant. Chaque nouvelle paire d'yeux et de cerveaux augmente vos chances de reparer la chaine avant l'ultime effondrement.
             </p>
+
+            <h4>Choisissez votre avatar</h4>
+            <p>
+              Identifiez-vous visuellement pour votre escouade. Selectionnez un avatar pour qu'il s'affiche aupres de vos coequipiers.
+            </p>
+            <div className="avatar-selector">
+              {AVATARS.map(({ id, src, label }) => {
+                const isSelected = id === avatar;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={["avatar-selector__choice", isSelected ? "is-selected" : ""].join(" ").trim()}
+                    onClick={() => updateAvatar(id)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="avatar-selector__image">
+                      <img src={src} alt={label} />
+                    </span>
+                    <span className="avatar-selector__label">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
             <h4>En route vers les enigmes</h4>
             <p>

@@ -16,6 +16,7 @@ const STORAGE_KEYS = {
   missionStartTimestamp: "missionStartTimestamp",
   missionElapsedSeconds: "missionElapsedSeconds",
   missionCompleted: "missionCompleted",
+  avatar: "avatar",
 };
 
 const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4"];
@@ -28,6 +29,7 @@ export default function useRoomState() {
   const [username] = useState(() => sessionStorage.getItem(STORAGE_KEYS.pseudo) || "");
   const [room] = useState(() => sessionStorage.getItem(STORAGE_KEYS.room) || "");
   const [isHost] = useState(() => readBoolean(STORAGE_KEYS.isHost));
+  const [avatar, setAvatar] = useState(() => sessionStorage.getItem(STORAGE_KEYS.avatar) || "");
   const [missionStarted, setMissionStarted] = useState(() =>
     readBoolean(STORAGE_KEYS.missionStarted, false)
   );
@@ -57,7 +59,17 @@ export default function useRoomState() {
     }
 
     const handlePlayersUpdate = (updatedPlayers) => {
-      setPlayers(Array.isArray(updatedPlayers) ? [...updatedPlayers] : []);
+      if (!Array.isArray(updatedPlayers)) {
+        setPlayers([]);
+        return;
+      }
+      setPlayers(
+        updatedPlayers.map((player) =>
+          typeof player === "object" && player
+            ? { username: player.username, avatar: player.avatar ?? null }
+            : { username: String(player || ""), avatar: null }
+        )
+      );
     };
 
     const handleNewMessage = (msg) => {
@@ -122,9 +134,9 @@ export default function useRoomState() {
     setTimerRemaining(null);
     setEnigmesProgressState(getEnigmesProgress(room));
 
-    socket.emit("joinRoom", { username, room }, (initialState = {}) => {
+    socket.emit("joinRoom", { username, room, avatar }, (initialState = {}) => {
       if (Array.isArray(initialState.players)) {
-        setPlayers([...initialState.players]);
+        handlePlayersUpdate(initialState.players);
       }
       if (Array.isArray(initialState.messages)) {
         setChat([...initialState.messages]);
@@ -214,6 +226,28 @@ export default function useRoomState() {
     }
   }, [room]);
 
+  const updateAvatar = useCallback(
+    (avatarId) => {
+      if (!username || !room) {
+        return;
+      }
+      const trimmed = typeof avatarId === "string" ? avatarId.trim() : "";
+      sessionStorage.setItem(STORAGE_KEYS.avatar, trimmed);
+      setAvatar(trimmed);
+      setPlayers((current) => {
+        const hasPlayer = current.some((player) => player.username === username);
+        if (!hasPlayer) {
+          return [...current, { username, avatar: trimmed || null }];
+        }
+        return current.map((player) =>
+          player.username === username ? { ...player, avatar: trimmed || null } : player
+        );
+      });
+      socket.emit("avatarUpdate", { room, username, avatar: trimmed || null });
+    },
+    [room, username]
+  );
+
   const completedEnigmesCount = useMemo(
     () =>
       REQUIRED_ENIGMES.filter((key) => Boolean(enigmesProgressState && enigmesProgressState[key]))
@@ -271,6 +305,8 @@ export default function useRoomState() {
       allEnigmesCompleted,
       missionCompleted,
       missionElapsedSeconds,
+      avatar,
+      updateAvatar,
     }),
     [
       allEnigmesCompleted,
@@ -288,6 +324,8 @@ export default function useRoomState() {
       startMission,
       timerRemaining,
       username,
+      avatar,
+      updateAvatar,
     ]
   );
 

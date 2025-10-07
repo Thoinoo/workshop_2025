@@ -13,7 +13,7 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
 
-let rooms = {}; // { roomNumber: { players: [], messages: [], timer: { remaining, interval, started }, enigmes: {} } }
+let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {} } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
@@ -81,7 +81,7 @@ const leaveRoom = (socket, roomName) => {
   }
 
   if (socket.data?.username) {
-    room.players = room.players.filter((player) => player !== socket.data.username);
+    room.players = room.players.filter((player) => player.username !== socket.data.username);
   }
 
   if (!room.players.length) {
@@ -98,9 +98,10 @@ const leaveRoom = (socket, roomName) => {
 io.on('connection', (socket) => {
   console.log('🟢 Nouvelle connexion');
 
-  socket.on('joinRoom', ({ username, room }, callback = () => {}) => {
+  socket.on('joinRoom', ({ username, room, avatar }, callback = () => {}) => {
     const trimmedUsername = (username ?? '').trim();
     const trimmedRoom = (room ?? '').trim();
+    const sanitizedAvatar = typeof avatar === 'string' ? avatar.trim() : null;
 
     if (!trimmedUsername || !trimmedRoom) {
       callback({ players: [], messages: [], timer: ROOM_DURATION_SECONDS });
@@ -121,8 +122,8 @@ io.on('connection', (socket) => {
     }
     const timerValue = roomState.timer.remaining;
 
-    roomState.players = roomState.players.filter((player) => player !== trimmedUsername);
-    roomState.players.push(trimmedUsername);
+    roomState.players = roomState.players.filter((player) => player.username !== trimmedUsername);
+    roomState.players.push({ username: trimmedUsername, avatar: sanitizedAvatar });
 
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
     socket.emit('chatHistory', roomState.messages);
@@ -192,6 +193,28 @@ io.on('connection', (socket) => {
       completed: Boolean(completed)
     });
     io.to(trimmedRoom).emit('enigmesProgressSync', { ...roomState.enigmes });
+  });
+
+  socket.on('avatarUpdate', ({ room, username, avatar }) => {
+    const trimmedRoom = (room ?? '').trim();
+    const trimmedUsername = (username ?? '').trim();
+    if (!trimmedRoom || !trimmedUsername) {
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    const sanitizedAvatar = typeof avatar === 'string' ? avatar.trim() : null;
+    let updated = false;
+    roomState.players = roomState.players.map((player) => {
+      if (player.username === trimmedUsername) {
+        updated = true;
+        return { ...player, avatar: sanitizedAvatar };
+      }
+      return player;
+    });
+    if (!updated) {
+      roomState.players.push({ username: trimmedUsername, avatar: sanitizedAvatar });
+    }
+    io.to(trimmedRoom).emit('playersUpdate', roomState.players);
   });
 
   socket.on('disconnect', () => {

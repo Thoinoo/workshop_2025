@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import useRoomState from "../hooks/useRoomState";
-import PlayersList from "../components/PlayersList";
+import { getAvatarById } from "../constants/avatars";
 import "./lobby.css";
 
 const formatDuration = (seconds) => {
@@ -83,7 +83,31 @@ export default function Victory() {
           </div>
 
           <div className="victory-players">
-            <PlayersList players={players} />
+            <h2 className="victory-players__title">Equipes ayant participe</h2>
+            <div className="victory-avatars">
+              {players && players.length ? (
+                players.map((player, index) => {
+                  const username = player?.username || `agent-${index + 1}`;
+                  const avatarMeta = getAvatarById(player?.avatar);
+                  return (
+                    <figure key={username} className="victory-avatar">
+                      <span className="victory-avatar__frame" aria-hidden="true">
+                        {avatarMeta ? (
+                          <img src={avatarMeta.src} alt="" />
+                        ) : (
+                          <span className="victory-avatar__placeholder">
+                            {username.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                      <figcaption className="victory-avatar__name">{username}</figcaption>
+                    </figure>
+                  );
+                })
+              ) : (
+                <p className="victory-avatars__empty">Les agents se deconnectent...</p>
+              )}
+            </div>
           </div>
         </section>
       </main>

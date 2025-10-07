@@ -51,6 +51,22 @@ body {
   align-items: flex-start;
 }
 
+.game-avatar {
+  width: 72px;
+  height: 54px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  background: rgba(15, 23, 42, 0.75);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.3);
+}
+
+.game-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
 .game-header-section--timer {
   justify-content: center;
 }
@@ -255,18 +271,50 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.65rem;
 }
 
-.players-list li {
-  background: rgba(148, 163, 184, 0.15);
+.players-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(148, 163, 184, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.2);
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
   border-radius: 999px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: #e2e8f0;
+}
+
+.players-list__avatar {
+  width: 46px;
+  height: 34px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  display: grid;
+  place-items: center;
+}
+
+.players-list__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  margin-top: -80%;
+}
+
+.players-list__avatar--placeholder {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.players-list__name {
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .chat-box {
@@ -518,6 +566,65 @@ body {
   filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.55));
 }
 
+.avatar-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.avatar-selector__choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.6rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.avatar-selector__choice:hover,
+.avatar-selector__choice:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(30, 41, 59, 0.65);
+}
+
+.avatar-selector__choice.is-selected {
+  border-color: rgba(37, 211, 102, 0.7);
+  background: rgba(37, 211, 102, 0.12);
+  box-shadow: 0 16px 28px rgba(37, 211, 102, 0.18);
+}
+
+.avatar-selector__image {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.avatar-selector__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.avatar-selector__label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
 .victory-page .game-header {
   margin-bottom: clamp(1.75rem, 4vw, 3rem);
 }
@@ -581,9 +688,70 @@ body {
   color: #34d399;
 }
 
-.victory-players .players-list {
-  margin: 0 auto;
-  max-width: 320px;
+.victory-players {
+  display: grid;
+  gap: 1rem;
+}
+
+.victory-players__title {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.victory-avatars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.victory-avatar {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.victory-avatar__frame {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 1.2rem;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.8);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.35);
+}
+
+.victory-avatar__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.victory-avatar__placeholder {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(148, 163, 184, 0.9);
+  letter-spacing: 0.1em;
+}
+
+.victory-avatar__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.victory-avatars__empty {
+  grid-column: 1 / -1;
+  opacity: 0.75;
+  font-size: 0.9rem;
 }
 
 .puzzle-instructions h3 {
