@@ -171,6 +171,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  text-align: left;
+  align-items: stretch;
 }
 
 .game-card h2 {
@@ -416,6 +418,32 @@ body {
 .puzzle-content {
   display: grid;
   gap: 1.2rem;
+}
+
+.typewriter-text {
+  white-space: pre-line;
+}
+
+.typewriter-heading,
+.typewriter-paragraph {
+  position: relative;
+  text-align: left;
+}
+
+.typewriter-shadow {
+  visibility: hidden;
+  user-select: none;
+  display: block;
+  text-align: left;
+}
+
+.typewriter-content {
+  position: absolute;
+  inset: 0;
+  display: block;
+  white-space: inherit;
+  text-align: left;
+  width: 100%;
 }
 
 .puzzle-instructions {
