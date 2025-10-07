@@ -72,6 +72,11 @@ export default function Enigme3() {
             )}
           </p>
           <h2>Enigme 3</h2>
+          {isCompleted ? (
+            <div className="enigme-post-completion">
+              écrire ici les informations post réussite de l'énigme
+            </div>
+          ) : null}
 
           <p>
             Sur le premier coffre : "J'avais 10 pieces, j'en perds 8."<br />

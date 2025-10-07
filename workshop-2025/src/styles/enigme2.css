@@ -1,0 +1,35 @@
+/* Centrage local uniquement pour cette énigme */
+.database-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* occupe tout l’espace du parent */
+}
+
+.database-error img {
+  width: 120px;
+  height: auto;
+}
+
+/* Les nœuds (cercles autour du centre) */
+.node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  background-color: #4caf50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s;
+}
+
+.node:hover {
+  background-color: #45a049;
+  transform: scale(1.1);
+}

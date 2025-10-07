@@ -30,6 +30,12 @@ export default function Enigme1() {
     }
   }, [missionStarted, navigate]);
 
+  useEffect(() => {
+    if (isCompleted && typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isCompleted]);
+
   return (
     <div className="game-page">
       <header className="game-header">
@@ -60,11 +66,55 @@ export default function Enigme1() {
               "Preparez-vous a resoudre la premiere enigme."
             )}
           </p>
-          <h2>Enigme 1</h2>
-          <p>
-            Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
-            compte et l'echange d'idees avec votre equipe sera determinant.
-          </p>
+          <h2>Bloc Genesis</h2>
+          {isCompleted ? (
+            <article className="enigme-post-completion">
+              <header className="enigme-post-completion__header">
+                <h3>Bravo !!</h3>
+                <h3>Le Bloc Genesis</h3>
+                <p className="enigme-post-completion__subtitle">
+                  Premier bloc du reseau Bitcoin - manifeste technique et politique.
+                </p>
+              </header>
+
+              <div className="enigme-post-completion__grid">
+                <section>
+                  <h4>Origine</h4>
+                  <p>
+                    Cree le 3 janvier 2009 par Satoshi Nakamoto, il lance la chaine et contextualise
+                    la reponse de Bitcoin a la crise financiere.
+                  </p>
+                </section>
+                <section>
+                  <h4>Message cache</h4>
+                  <p>
+                    <q>The Times 03/Jan/2009 - Chancellor on brink of second bailout for banks.</q>
+                    <br />
+                    Une reference explicite a la defiance envers les sauvetages bancaires successifs.
+                  </p>
+                </section>
+                <section>
+                  <h4>Pourquoi c est cle</h4>
+                  <ul>
+                    <li>Hash immuable : toute modification invalide instantanement le bloc.</li>
+                    <li>Nonce trouve par minage : la preuve de travail verrouille la chaine.</li>
+                    <li>Sans lui, aucune transaction ne peut etre confirmee.</li>
+                  </ul>
+                </section>
+                <section>
+                  <h4>En resume</h4>
+                  <p>
+                    Le Genesis Block symbolise a la fois le demarrage technique de la blockchain et
+                    l ambition d une monnaie sans autorite centrale.
+                  </p>
+                </section>
+              </div>
+            </article>
+          ) : null}
+            <p>
+              Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
+              compte et l'echange d'idees avec votre equipe sera determinant.
+            </p>
 
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
@@ -135,3 +185,9 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
     </div>
   );
 }
+
+
+
+
+
+
