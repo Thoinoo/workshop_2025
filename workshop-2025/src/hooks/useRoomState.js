@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../socket";
+import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 const STORAGE_KEYS = {
   missionStarted: "missionStarted",
@@ -62,6 +63,14 @@ export default function useRoomState() {
       setMissionStarted(false);
     };
 
+    const handleEnigmeStatusUpdate = (payload = {}) => {
+      const { key, completed } = payload ?? {};
+      if (typeof key !== "string" || !key) {
+        return;
+      }
+      setEnigmeStatus(key, Boolean(completed));
+    };
+
     setPlayers([]);
     setChat([]);
     setTimerRemaining(null);
@@ -89,6 +98,7 @@ export default function useRoomState() {
     socket.on("timerUpdate", handleTimerUpdate);
     socket.on("missionStarted", handleMissionStarted);
     socket.on("missionReset", handleMissionReset);
+    socket.on("enigmeStatusUpdate", handleEnigmeStatusUpdate);
 
     return () => {
       socket.off("playersUpdate", handlePlayersUpdate);
@@ -97,6 +107,7 @@ export default function useRoomState() {
       socket.off("timerUpdate", handleTimerUpdate);
       socket.off("missionStarted", handleMissionStarted);
       socket.off("missionReset", handleMissionReset);
+      socket.off("enigmeStatusUpdate", handleEnigmeStatusUpdate);
     };
   }, [navigate, room, username]);
 

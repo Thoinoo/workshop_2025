@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import socket from "../socket";
+import { getEnigmesProgress, setEnigmeStatus } from "../utils/enigmesProgress";
 
 const INITIAL_BOOT_LINES = [
   "[BOOT SEQUENCE ERROR]",
@@ -588,6 +590,17 @@ export default function GenesisTerminal() {
   const [historyIndex, setHistoryIndex] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const hasValidatedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const progress = getEnigmesProgress();
+    if (progress?.enigme1) {
+      hasValidatedRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -598,6 +611,30 @@ export default function GenesisTerminal() {
 
   const appendLog = useCallback((entries) => {
     setLog((current) => [...current, ...entries]);
+  }, []);
+
+  const validateEnigme = useCallback(() => {
+    if (hasValidatedRef.current) {
+      return;
+    }
+
+    const alreadyCompleted =
+      typeof window !== "undefined" ? Boolean(getEnigmesProgress()?.enigme1) : false;
+
+    if (alreadyCompleted) {
+      hasValidatedRef.current = true;
+      return;
+    }
+
+    hasValidatedRef.current = true;
+    setEnigmeStatus("enigme1", true);
+
+    if (typeof window !== "undefined") {
+      const roomId = sessionStorage.getItem("room");
+      if (roomId) {
+        socket.emit("enigmeStatusUpdate", { room: roomId, key: "enigme1", completed: true });
+      }
+    }
   }, []);
 
   const executeCommand = useCallback(
@@ -617,6 +654,9 @@ export default function GenesisTerminal() {
         const lines = Array.isArray(text) ? text : [text];
         lines.forEach((line) => {
           outputs.push({ id: `out-${Date.now()}-${Math.random()}`, role: "output", text: line });
+          if (typeof line === "string" && line.toLowerCase().includes("blockchain restored")) {
+            validateEnigme();
+          }
         });
       };
 
@@ -683,7 +723,7 @@ export default function GenesisTerminal() {
 
       appendLog([logCommand, ...outputs]);
     },
-    [appendLog]
+    [appendLog, validateEnigme]
   );
 
   const handleSubmit = useCallback(
