@@ -6,6 +6,8 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import errorImg from "../assets/error.png";
+import "../styles/enigme2.css";
 
 export default function Enigme2() {
   const navigate = useNavigate();
@@ -16,6 +18,15 @@ export default function Enigme2() {
       navigate("/preparation", { replace: true });
     }
   }, [missionStarted, navigate]);
+
+  const nodes = [
+    { id: 1, angle: 0 },
+    { id: 2, angle: 60 },
+    { id: 3, angle: 120 },
+    { id: 4, angle: 180 },
+    { id: 5, angle: 240 },
+    { id: 6, angle: 300 },
+  ];
 
   return (
     <div className="game-page">
@@ -42,12 +53,27 @@ export default function Enigme2() {
             La base de données est corrompu trouver un moyen de stocker les données de manière sécurisée.
           </p>
           <div className="puzzle-instructions">
+            <div class="database-error">
+              <img src={errorImg} alt="database-error"/>
+            </div>
+            {/* Nœuds autour */}
+            {nodes.map((node) => (
+              <div
+                key={node.id}
+                className="node"
+                style={{
+                  transform: `rotate(${node.angle}deg) translate(160px) rotate(-${node.angle}deg)`,
+                }}
+              >
+                <span>{node.id}</span>
+              </div>
+            ))}
           </div>
         </section>
         <aside className="chat-panel">
           <PlayersList players={players} />
-          <Chat chat={chat} onSendMessage={sendMessage} />
-        </aside>
+            <Chat chat={chat} onSendMessage={sendMessage} />
+          </aside>
       </div>
     </div>
   );
