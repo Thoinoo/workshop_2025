@@ -20,7 +20,6 @@ export default function Enigme1() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <Timer /> 
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme1" />
         </div>

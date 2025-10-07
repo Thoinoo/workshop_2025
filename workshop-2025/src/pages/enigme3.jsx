@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -6,16 +6,31 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 export default function Enigme3() {
   const navigate = useNavigate();
   const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const [answer, setAnswer] = useState("");
+  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     if (!missionStarted) {
       navigate("/preparation", { replace: true });
     }
   }, [missionStarted, navigate]);
+
+  const handleSubmit = () => {
+    const normalized = answer.trim().toLowerCase();
+
+    if (normalized === "banque") {
+      setEnigmeStatus("enigme3", true);
+      setFeedback({ type: "success", message: "Reponse correcte ! Enigme validee." });
+      setAnswer("");
+    } else {
+      setFeedback({ type: "error", message: "Ce n'est pas la bonne reponse. Essayez encore." });
+    }
+  };
 
   return (
     <div className="game-page">
@@ -58,14 +73,37 @@ export default function Enigme3() {
           </p>
 
           <div className="reponse-zone">
-            <input type="text" placeholder="Ecris le mot secret" className="reponse-input" />
-            <button
-              className="reponse-button"
-              onClick={() => alert("Verification de la reponse (a implementer)")}
-            >
+            <input
+              type="text"
+              placeholder="Ecris le mot secret"
+              className="reponse-input"
+              value={answer}
+              onChange={(event) => {
+                setAnswer(event.target.value);
+                if (feedback) {
+                  setFeedback(null);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleSubmit();
+                }
+              }}
+            />
+            <button className="reponse-button" onClick={handleSubmit}>
               REPONSE
             </button>
           </div>
+          {feedback ? (
+            <p
+              className={`reponse-feedback ${
+                feedback.type === "success" ? "reponse-feedback--success" : "reponse-feedback--error"
+              }`}
+            >
+              {feedback.message}
+            </p>
+          ) : null}
         </section>
 
         <aside className="chat-panel">

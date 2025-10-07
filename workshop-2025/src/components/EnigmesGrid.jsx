@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ENIGMES_PROGRESS_EVENT,
+  getEnigmesProgress,
+} from "../utils/enigmesProgress";
 
 const GRID_ITEMS = [
   { key: "enigme1", label: "Énigme 1", path: "/enigme1" },
@@ -13,13 +17,15 @@ const GRID_ITEMS = [
   { key: "slot-9", label: "À venir", disabled: true },
 ];
 
-function GridButtons({ active, onAfterNavigate }) {
+function GridButtons({ active, onAfterNavigate, completed }) {
   const navigate = useNavigate();
+  const completedKeys = completed instanceof Set ? completed : new Set(completed ?? []);
 
   return (
     <nav aria-label="Navigation entre les énigmes" className="enigmes-grid">
       {GRID_ITEMS.map(({ key, label, path, disabled }) => {
         const isActive = key === active;
+        const isCompleted = completedKeys.has(key);
 
         return (
           <button
@@ -28,6 +34,7 @@ function GridButtons({ active, onAfterNavigate }) {
             className={[
               "enigmes-grid__item",
               isActive ? "enigmes-grid__item--active" : "",
+              isCompleted ? "enigmes-grid__item--completed" : "",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -50,6 +57,39 @@ function GridButtons({ active, onAfterNavigate }) {
 export default function EnigmesGridMenu({ active }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const [completedKeys, setCompletedKeys] = useState(() => {
+    const progress = getEnigmesProgress();
+    return new Set(
+      Object.entries(progress)
+        .filter(([, value]) => Boolean(value))
+        .map(([key]) => key)
+    );
+  });
+
+  useEffect(() => {
+    const updateFromStorage = () => {
+      const progress = getEnigmesProgress();
+      setCompletedKeys(
+        new Set(
+          Object.entries(progress)
+            .filter(([, value]) => Boolean(value))
+            .map(([key]) => key)
+        )
+      );
+    };
+
+    const handleProgressEvent = () => {
+      updateFromStorage();
+    };
+
+    window.addEventListener(ENIGMES_PROGRESS_EVENT, handleProgressEvent);
+    window.addEventListener("storage", handleProgressEvent);
+
+    return () => {
+      window.removeEventListener(ENIGMES_PROGRESS_EVENT, handleProgressEvent);
+      window.removeEventListener("storage", handleProgressEvent);
+    };
+  }, []);
 
   useEffect(() => {
     setIsOpen(false);
@@ -99,7 +139,11 @@ export default function EnigmesGridMenu({ active }) {
       </button>
 
       <div className="enigmes-menu__panel">
-        <GridButtons active={active} onAfterNavigate={() => setIsOpen(false)} />
+        <GridButtons
+          active={active}
+          onAfterNavigate={() => setIsOpen(false)}
+          completed={completedKeys}
+        />
       </div>
     </div>
   );
