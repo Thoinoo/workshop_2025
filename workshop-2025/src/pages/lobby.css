@@ -68,6 +68,12 @@ body {
   align-items: flex-start;
 }
 
+.enigmes-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .enigmes-menu__toggle {
   display: inline-flex;
   align-items: center;
@@ -109,6 +115,22 @@ body {
 
 .enigmes-menu--open .enigmes-menu__icon span {
   background: rgba(59, 130, 246, 0.8);
+}
+
+.enigmes-menu__completion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  color: rgba(191, 219, 254, 0.95);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .enigmes-menu__label {

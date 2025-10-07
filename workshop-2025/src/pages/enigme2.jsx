@@ -10,6 +10,8 @@ import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import errorImg from "../assets/error.png";
 import "../styles/enigme2.css";
+import socket from "../socket";
+import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 export default function Enigme2() {
   const navigate = useNavigate();
@@ -21,6 +23,14 @@ export default function Enigme2() {
       navigate("/preparation", { replace: true });
     }
   }, [missionStarted, navigate]);
+
+  const handleDebugComplete = () => {
+    if (!room || isCompleted) {
+      return;
+    }
+    setEnigmeStatus(room, "enigme2", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme2", completed: true });
+  };
 
   const nodes = [
     { id: 1, angle: 0 },
@@ -46,6 +56,11 @@ export default function Enigme2() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
+          {!isCompleted ? (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l enigme (debug)
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -54,17 +69,17 @@ export default function Enigme2() {
           <h2>Enigme 2</h2>
           {isCompleted ? (
             <div className="enigme-post-completion">
-              écrire ici les informations post réussite de l'énigme
+              Ajouter ici les informations post reussite de l enigme
             </div>
           ) : null}
           <p>
-            La base de données est corrompu trouver un moyen de stocker les données de manière sécurisée.
+            La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
           </p>
           <div className="puzzle-instructions">
-            <div class="database-error">
-              <img src={errorImg} alt="database-error"/>
+            <div className="database-error">
+              <img src={errorImg} alt="Erreur base de donnees" />
             </div>
-            {/* Nœuds autour */}
+            {/* Noeuds autour */}
             {nodes.map((node) => (
               <div
                 key={node.id}
@@ -80,8 +95,8 @@ export default function Enigme2() {
         </section>
         <aside className="chat-panel">
           <PlayersList players={players} />
-            <Chat chat={chat} onSendMessage={sendMessage} />
-          </aside>
+          <Chat chat={chat} onSendMessage={sendMessage} />
+        </aside>
       </div>
       <PuzzleSuccessBanner visible={isCompleted} />
     </div>

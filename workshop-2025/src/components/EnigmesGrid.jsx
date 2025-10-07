@@ -7,23 +7,28 @@ import {
 } from "../utils/enigmesProgress";
 
 const GRID_ITEMS = [
-  { key: "enigme1", label: "Énigme 1", path: "/enigme1" },
-  { key: "enigme2", label: "Énigme 2", path: "/enigme2" },
-  { key: "enigme3", label: "Énigme 3", path: "/enigme3" },
-  { key: "enigme4", label: "Énigme 4", path: "/enigme4" },
-  { key: "slot-5", label: "À venir", disabled: true },
-  { key: "slot-6", label: "À venir", disabled: true },
-  { key: "slot-7", label: "À venir", disabled: true },
-  { key: "slot-8", label: "À venir", disabled: true },
-  { key: "slot-9", label: "À venir", disabled: true },
+  { key: "enigme1", label: "Enigme 1", path: "/enigme1" },
+  { key: "enigme2", label: "Enigme 2", path: "/enigme2" },
+  { key: "enigme3", label: "Enigme 3", path: "/enigme3" },
+  { key: "enigme4", label: "Enigme 4", path: "/enigme4" },
+  { key: "slot-5", label: "A venir", disabled: true },
+  { key: "slot-6", label: "A venir", disabled: true },
+  { key: "slot-7", label: "A venir", disabled: true },
+  { key: "slot-8", label: "A venir", disabled: true },
+  { key: "slot-9", label: "A venir", disabled: true },
 ];
+
+const PLAYABLE_KEYS = new Set(
+  GRID_ITEMS.filter(({ disabled, path }) => !disabled && Boolean(path)).map(({ key }) => key)
+);
+const TOTAL_PLAYABLE = PLAYABLE_KEYS.size;
 
 function GridButtons({ active, onAfterNavigate, completed }) {
   const navigate = useNavigate();
   const completedKeys = completed instanceof Set ? completed : new Set(completed ?? []);
 
   return (
-    <nav aria-label="Navigation entre les énigmes" className="enigmes-grid">
+    <nav aria-label="Navigation entre les enigmes" className="enigmes-grid">
       {GRID_ITEMS.map(({ key, label, path, disabled }) => {
         const isActive = key === active;
         const isCompleted = completedKeys.has(key);
@@ -148,25 +153,37 @@ export default function EnigmesGridMenu({ active, room }) {
     };
   }, [isOpen]);
 
+  const completedCount = useMemo(
+    () => Array.from(completedKeys).filter((key) => PLAYABLE_KEYS.has(key)).length,
+    [completedKeys]
+  );
+
   return (
     <div
       ref={containerRef}
       className={["enigmes-menu", isOpen ? "enigmes-menu--open" : ""].join(" ").trim()}
     >
-      <button
-        type="button"
-        className="enigmes-menu__toggle"
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((previous) => !previous)}
-      >
-        <span className="enigmes-menu__icon" aria-hidden="true">
-          {GRID_ITEMS.map(({ key }) => (
-            <span key={key} />
-          ))}
-        </span>
-        <span className="enigmes-menu__label">Sélection des énigmes</span>
-      </button>
+      <div className="enigmes-menu__trigger">
+        <button
+          type="button"
+          className="enigmes-menu__toggle"
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((previous) => !previous)}
+        >
+          <span className="enigmes-menu__icon" aria-hidden="true">
+            {GRID_ITEMS.map(({ key }) => (
+              <span key={key} />
+            ))}
+          </span>
+          <span className="enigmes-menu__label">Selection des enigmes</span>
+        </button>
+        {TOTAL_PLAYABLE > 0 ? (
+          <span className="enigmes-menu__completion" aria-live="polite">
+            {completedCount}/{TOTAL_PLAYABLE}
+          </span>
+        ) : null}
+      </div>
 
       <div className="enigmes-menu__panel">
         <GridButtons

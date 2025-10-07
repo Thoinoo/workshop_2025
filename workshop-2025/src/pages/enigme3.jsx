@@ -18,6 +18,14 @@ export default function Enigme3() {
   const isCompleted = useEnigmeCompletion("enigme3", room);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
+  const handleDebugComplete = () => {
+    if (!room || isCompleted) {
+      return;
+    }
+    setEnigmeStatus(room, "enigme3", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme3", completed: true });
+    setFeedback({ type: "success", message: "Enigme validee (debug)." });
+  };
 
   useEffect(() => {
     if (!missionStarted) {
@@ -56,6 +64,11 @@ export default function Enigme3() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
+          {!isCompleted ? (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l enigme (debug)
+            </button>
+          ) : null}
         </div>
       </header>
 

@@ -83,9 +83,8 @@ export default function Preparation() {
             <p>
               En haut de l'ecran, le compteur de Bitcoin pulse comme un coeur en peril : il represente le temps restant avant que le reseau ne s'eteigne. Quand il atteindra zero, les transactions tomberont dans l'oubli et vous aurez perdu. Regardez-le, sentez sa cadence : chaque seconde compte, chaque decision pese.
             </p>
-            <figure className="puzzle-instructions__visual">
               <img src={btcCounterImage} alt="Compteur Bitcoin affiché en haut de l'écran" />
-            </figure>
+            
 
             <h4>Numero de salle - appelez des renforts</h4>
             <p>
@@ -96,9 +95,8 @@ export default function Preparation() {
             <p>
               Le chemin vers la reparation compte quatre etapes. Utilisez le bouton de navigation ci-dessous pour lancer la premiere mission : cliquez sur l'icone. Les enigmes sont vos outils : resolvez-les pour restaurer le Genesis Block, recalculer les liens, retablir le consensus et decrypter la cle maitresse.
             </p>
-            <figure className="puzzle-instructions__visual">
               <img src={enigmGridImage} alt="Grille d'enigmes à completer" />
-            </figure>
+            
 
             <h4>Communication et cooperation</h4>
             <p>

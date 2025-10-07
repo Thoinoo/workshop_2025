@@ -9,6 +9,8 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 import GenesisTerminal from "../components/GenesisTerminal";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
+import socket from "../socket";
+import { setEnigmeStatus } from "../utils/enigmesProgress";
 
 export default function Enigme1() {
   const navigate = useNavigate();
@@ -16,6 +18,13 @@ export default function Enigme1() {
     useRoomState();
   const isCompleted = useEnigmeCompletion("enigme1", room);
   const [openedHints, setOpenedHints] = useState({});
+  const handleDebugComplete = () => {
+    if (!room || isCompleted) {
+      return;
+    }
+    setEnigmeStatus(room, "enigme1", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme1", completed: true });
+  };
 
   const toggleHint = (index) => {
     setOpenedHints((current) => ({
@@ -51,6 +60,11 @@ export default function Enigme1() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
+          {!isCompleted ? (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l enigme (debug)
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -92,14 +106,6 @@ export default function Enigme1() {
                     <br />
                     Une reference explicite a la defiance envers les sauvetages bancaires successifs.
                   </p>
-                </section>
-                <section>
-                  <h4>Pourquoi c est cle</h4>
-                  <ul>
-                    <li>Hash immuable : toute modification invalide instantanement le bloc.</li>
-                    <li>Nonce trouve par minage : la preuve de travail verrouille la chaine.</li>
-                    <li>Sans lui, aucune transaction ne peut etre confirmee.</li>
-                  </ul>
                 </section>
                 <section>
                   <h4>En resume</h4>
@@ -185,7 +191,6 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
     </div>
   );
 }
-
 
 
 
