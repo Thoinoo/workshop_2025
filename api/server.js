@@ -13,14 +13,15 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
 
-let rooms = {}; // { roomNumber: { players: [], messages: [], timer: { remaining, interval, started } } }
+let rooms = {}; // { roomNumber: { players: [], messages: [], timer: { remaining, interval, started }, enigmes: {} } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
     rooms[roomName] = {
       players: [],
       messages: [],
-      timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false }
+      timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
+      enigmes: {}
     };
   }
   return rooms[roomName];
@@ -126,15 +127,17 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
     socket.emit('chatHistory', roomState.messages);
     socket.emit('timerUpdate', timerValue);
+    socket.emit('enigmesProgressSync', { ...roomState.enigmes });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
     }
 
     callback({
-      players: roomState.players,
-      messages: roomState.messages,
+      players: [...roomState.players],
+      messages: [...roomState.messages],
       timer: timerValue,
-      missionStarted: roomState.timer.started
+      missionStarted: roomState.timer.started,
+      enigmes: { ...roomState.enigmes }
     });
 
     console.log(`${trimmedUsername} a rejoint la salle ${trimmedRoom}`);
@@ -169,8 +172,26 @@ io.on('connection', (socket) => {
     const roomState = ensureRoom(trimmedRoom);
     stopTimerForRoom(trimmedRoom);
     roomState.messages = [];
+    roomState.enigmes = {};
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
+    io.to(trimmedRoom).emit('enigmesProgressSync', {});
+  });
+
+  socket.on('enigmeStatusUpdate', ({ room, key, completed }) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedKey = typeof key === 'string' ? key.trim() : '';
+    if (!trimmedRoom || !normalizedKey) {
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    roomState.enigmes[normalizedKey] = Boolean(completed);
+    io.to(trimmedRoom).emit('enigmeStatusUpdate', {
+      key: normalizedKey,
+      completed: Boolean(completed)
+    });
+    io.to(trimmedRoom).emit('enigmesProgressSync', { ...roomState.enigmes });
   });
 
   socket.on('disconnect', () => {

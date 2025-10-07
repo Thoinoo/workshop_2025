@@ -24,8 +24,7 @@ const TYPE_SPEED_MESSAGE = 20;
 
 export default function Jeu() {
   const navigate = useNavigate();
-  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
-    useRoomState();
+  const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
   const [displayedTitle, setDisplayedTitle] = useState("");
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [titleCompleted, setTitleCompleted] = useState(false);
@@ -104,7 +103,7 @@ export default function Jeu() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu />
+          <EnigmesGridMenu room={room} />
           <p className="game-room">Salle {room}</p>
         </div>
         <div className="game-header-section game-header-section--timer">

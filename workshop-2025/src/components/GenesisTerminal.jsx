@@ -577,7 +577,20 @@ const runGrep = ({ args }) => {
   return [...new Set(results)];
 };
 
-export default function GenesisTerminal() {
+const resolveRoom = (room) => {
+  if (typeof room === "string" && room.trim()) {
+    return room.trim();
+  }
+  if (typeof window !== "undefined") {
+    const stored = sessionStorage.getItem("room");
+    if (stored && stored.trim()) {
+      return stored.trim();
+    }
+  }
+  return null;
+};
+
+export default function GenesisTerminal({ room }) {
   const [log, setLog] = useState(() =>
     INITIAL_BOOT_LINES.map((line, index) => ({
       id: `boot-${index}`,
@@ -591,16 +604,16 @@ export default function GenesisTerminal() {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const hasValidatedRef = useRef(false);
+  const resolvedRoom = useMemo(() => resolveRoom(room), [room]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!resolvedRoom) {
+      hasValidatedRef.current = false;
       return;
     }
-    const progress = getEnigmesProgress();
-    if (progress?.enigme1) {
-      hasValidatedRef.current = true;
-    }
-  }, []);
+    const progress = getEnigmesProgress(resolvedRoom);
+    hasValidatedRef.current = Boolean(progress?.enigme1);
+  }, [resolvedRoom]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -614,28 +627,20 @@ export default function GenesisTerminal() {
   }, []);
 
   const validateEnigme = useCallback(() => {
-    if (hasValidatedRef.current) {
+    if (hasValidatedRef.current || !resolvedRoom) {
       return;
     }
 
-    const alreadyCompleted =
-      typeof window !== "undefined" ? Boolean(getEnigmesProgress()?.enigme1) : false;
-
+    const alreadyCompleted = Boolean(getEnigmesProgress(resolvedRoom)?.enigme1);
     if (alreadyCompleted) {
       hasValidatedRef.current = true;
       return;
     }
 
     hasValidatedRef.current = true;
-    setEnigmeStatus("enigme1", true);
-
-    if (typeof window !== "undefined") {
-      const roomId = sessionStorage.getItem("room");
-      if (roomId) {
-        socket.emit("enigmeStatusUpdate", { room: roomId, key: "enigme1", completed: true });
-      }
-    }
-  }, []);
+    setEnigmeStatus(resolvedRoom, "enigme1", true);
+    socket.emit("enigmeStatusUpdate", { room: resolvedRoom, key: "enigme1", completed: true });
+  }, [resolvedRoom]);
 
   const executeCommand = useCallback(
     (rawCommand) => {

@@ -6,12 +6,15 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import errorImg from "../assets/error.png";
 import "../styles/enigme2.css";
 
 export default function Enigme2() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme2", room);
 
   useEffect(() => {
     if (!missionStarted) {
@@ -32,7 +35,7 @@ export default function Enigme2() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme2" />
+          <EnigmesGridMenu active="enigme2" room={room} />
         </div>
 
         <div className="game-header-section game-header-section--timer">
@@ -75,6 +78,7 @@ export default function Enigme2() {
             <Chat chat={chat} onSendMessage={sendMessage} />
           </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }

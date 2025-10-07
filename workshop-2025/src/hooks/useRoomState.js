@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { setEnigmeStatus } from "../utils/enigmesProgress";
+import { clearEnigmesProgress, setEnigmeStatus, setEnigmesProgress } from "../utils/enigmesProgress";
 
 const STORAGE_KEYS = {
   missionStarted: "missionStarted",
@@ -61,6 +61,7 @@ export default function useRoomState() {
     const handleMissionReset = () => {
       sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
       setMissionStarted(false);
+      clearEnigmesProgress(room);
     };
 
     const handleEnigmeStatusUpdate = (payload = {}) => {
@@ -68,7 +69,11 @@ export default function useRoomState() {
       if (typeof key !== "string" || !key) {
         return;
       }
-      setEnigmeStatus(key, Boolean(completed));
+      setEnigmeStatus(room, key, Boolean(completed));
+    };
+
+    const handleEnigmesProgressSync = (progress = {}) => {
+      setEnigmesProgress(room, progress && typeof progress === "object" ? progress : {});
     };
 
     setPlayers([]);
@@ -90,6 +95,11 @@ export default function useRoomState() {
         sessionStorage.setItem(STORAGE_KEYS.missionStarted, started ? "true" : "false");
         setMissionStarted(started);
       }
+      if (initialState.enigmes && typeof initialState.enigmes === "object") {
+        setEnigmesProgress(room, initialState.enigmes);
+      } else {
+        clearEnigmesProgress(room);
+      }
     });
 
     socket.on("playersUpdate", handlePlayersUpdate);
@@ -100,6 +110,7 @@ export default function useRoomState() {
     socket.on("startMission", handleMissionStarted);
     socket.on("missionReset", handleMissionReset);
     socket.on("enigmeStatusUpdate", handleEnigmeStatusUpdate);
+    socket.on("enigmesProgressSync", handleEnigmesProgressSync);
 
     return () => {
       socket.off("playersUpdate", handlePlayersUpdate);
@@ -110,6 +121,7 @@ export default function useRoomState() {
       socket.off("startMission", handleMissionStarted);
       socket.off("missionReset", handleMissionReset);
       socket.off("enigmeStatusUpdate", handleEnigmeStatusUpdate);
+      socket.off("enigmesProgressSync", handleEnigmesProgressSync);
     };
   }, [navigate, room, username]);
 
@@ -138,6 +150,7 @@ export default function useRoomState() {
   const resetMission = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
     setMissionStarted(false);
+    clearEnigmesProgress(room);
     if (room) {
       socket.emit("resetMission", { room });
     }

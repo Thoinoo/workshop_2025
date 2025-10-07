@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -7,10 +7,22 @@ import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 import GenesisTerminal from "../components/GenesisTerminal";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme1() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+    useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme1", room);
+  const [openedHints, setOpenedHints] = useState({});
+
+  const toggleHint = (index) => {
+    setOpenedHints((current) => ({
+      ...current,
+      [index]: !current[index],
+    }));
+  };
 
   useEffect(() => {
     if (!missionStarted) {
@@ -22,7 +34,7 @@ export default function Enigme1() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme1" />
+          <EnigmesGridMenu active="enigme1" room={room} />
         </div>
 
         <div className="game-header-section game-header-section--timer">
@@ -65,7 +77,53 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
               </p>
           </div>
 
-          <GenesisTerminal />
+          
+
+          <GenesisTerminal room={room} />
+          <div className="enigme-hints">
+            <h3>Indices</h3>
+            <ul className="enigme-hints__list">
+              <li
+                className={`enigme-hints__item ${openedHints[0] ? "is-open" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="enigme-hints__toggle"
+                  onClick={() => toggleHint(0)}
+                  aria-expanded={openedHints[0] ? "true" : "false"}
+                >
+                  Indice 1
+                </button>
+                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un grep -r permettrais de mettre en avant certains fichier peut être</span>
+              </li>
+              <li
+                className={`enigme-hints__item ${openedHints[1] ? "is-open" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="enigme-hints__toggle"
+                  onClick={() => toggleHint(1)}
+                  aria-expanded={openedHints[1] ? "true" : "false"}
+                >
+                  Indice 2
+                </button>
+                <span className="enigme-hints__content">genesis/genesis_note2.enc semble encodé, et si on essayait de le déchiffrer ?</span>
+              </li>
+              <li
+                className={`enigme-hints__item ${openedHints[2] ? "is-open" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="enigme-hints__toggle"
+                  onClick={() => toggleHint(2)}
+                  aria-expanded={openedHints[2] ? "true" : "false"}
+                >
+                  Indice 3
+                </button>
+                <span className="enigme-hints__content">Des mots semblent mis en avant après avoir déchiffré genesis_note2.enc, un grep -ril sur un de ces mots permettrait peut être de trouver le fichier qu'on doit vérifier avec hashinfo !</span>
+              </li>
+            </ul>
+          </div>
         </section>
 
         <aside className="chat-panel">
@@ -73,6 +131,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }
