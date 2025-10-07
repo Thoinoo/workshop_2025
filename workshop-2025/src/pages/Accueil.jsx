@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDuration, formatOrdinal } from "../utils/formatting";
 import "./lobby.css";
+import bitcoinFire from "../assets/bitcoin_fire.png";
 
 const MODE_JOIN = "join";
 const MODE_CREATE = "create";
@@ -113,19 +114,18 @@ export default function Accueil() {
   };
 
   return (
-    <div className="game-page">
+    <div className="game-page home-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <p className="game-room">Bienvenue dans l'escape game</p>
+          <p className="game-room">CRYPTO BREAKDOWN</p>
           <p className="game-username">
             Choisissez votre couverture d'agent, puis creez une nouvelle mission ou rejoignez votre
             equipe pour la lancer.
           </p>
         </div>
-        <div className="game-header-section game-header-section--timer">
-          <div className="home-code-badge">Crypto breakdown</div>
+        <div className="game-header-section game-header-section--actions">
+          <img src={bitcoinFire} alt="Bitcoin en feu" className="home-hero-image" />
         </div>
-        <div className="game-header-section game-header-section--actions"></div>
       </header>
 
       <div className="game-layout">
