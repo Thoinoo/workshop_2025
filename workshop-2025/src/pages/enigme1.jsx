@@ -5,6 +5,7 @@ import PlayersList from "../components/PlayersList";
 import Timer from "../components/Timer";
 import socket from "../socket";
 import "./lobby.css";
+import Navigation from "../components/Navigation";
 
 export default function Enigme1() {
   const navigate = useNavigate();
@@ -66,19 +67,7 @@ export default function Enigme1() {
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
-          <p className="game-username">
-            {username ? (
-              <>
-                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
-                prochaine étape.
-              </>
-            ) : (
-              "Préparez-vous à résoudre la première énigme."
-            )}
-          </p>
-        </div>
-
+        <Navigation />
         <Timer /> 
 
         <button className="game-secondary" onClick={() => navigate("/jeu")}>Retour au lobby</button>
