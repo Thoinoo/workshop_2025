@@ -61,6 +61,7 @@ export default function useRoomState() {
   const [enigmesProgressState, setEnigmesProgressState] = useState(() =>
     getEnigmesProgress(sessionStorage.getItem(STORAGE_KEYS.room) || "")
   );
+  const [toolsState, setToolsState] = useState({});
 
   const [players, setPlayers] = useState([]);
   const [chat, setChat] = useState([]);
@@ -183,6 +184,7 @@ export default function useRoomState() {
       setMissionFailed(false);
       setMissionElapsedSeconds(null);
       persistLeaderboardEntry(null);
+      setToolsState({});
     };
 
     const handleEnigmeStatusUpdate = (payload = {}) => {
@@ -218,10 +220,16 @@ export default function useRoomState() {
       }
     };
 
+    const handleToolsUpdate = (payload = {}) => {
+      const normalized = payload && typeof payload === "object" ? payload : {};
+      setToolsState(normalized);
+    };
+
     setPlayers([]);
     setChat([]);
     setTimerRemaining(null);
     setEnigmesProgressState(getEnigmesProgress(room));
+    setToolsState({});
 
     socket.emit("joinRoom", { username, room, avatar }, (initialState = {}) => {
       if (Array.isArray(initialState.players)) {
@@ -248,6 +256,9 @@ export default function useRoomState() {
         clearEnigmesProgress(room);
         setEnigmesProgressState({});
       }
+      if (initialState.tools && typeof initialState.tools === "object") {
+        setToolsState({ ...initialState.tools });
+      }
     });
 
     socket.on("playersUpdate", handlePlayersUpdate);
@@ -260,6 +271,7 @@ export default function useRoomState() {
     socket.on("enigmeStatusUpdate", handleEnigmeStatusUpdate);
     socket.on("enigmesProgressSync", handleEnigmesProgressSync);
     socket.on("leaderboardEntryRecorded", handleLeaderboardEntryRecorded);
+    socket.on("toolsUpdate", handleToolsUpdate);
 
     return () => {
       socket.off("playersUpdate", handlePlayersUpdate);
@@ -272,6 +284,7 @@ export default function useRoomState() {
       socket.off("enigmeStatusUpdate", handleEnigmeStatusUpdate);
       socket.off("enigmesProgressSync", handleEnigmesProgressSync);
       socket.off("leaderboardEntryRecorded", handleLeaderboardEntryRecorded);
+      socket.off("toolsUpdate", handleToolsUpdate);
     };
   }, [navigate, persistLeaderboardEntry, room, username]);
 
@@ -343,6 +356,57 @@ export default function useRoomState() {
       socket.emit("avatarUpdate", { room, username, avatar: trimmed || null });
     },
     [room, username]
+  );
+
+  const claimTool = useCallback(
+    (toolId) =>
+      new Promise((resolve) => {
+        const normalizedToolId = typeof toolId === "string" ? toolId.trim() : "";
+        if (!room || !normalizedToolId) {
+          resolve({ ok: false, error: "missing_room_or_tool" });
+          return;
+        }
+
+        socket.emit("tool:claim", { room, toolId: normalizedToolId }, (response = {}) => {
+          resolve(response);
+        });
+      }),
+    [room]
+  );
+
+  const releaseTool = useCallback(
+    (toolId) =>
+      new Promise((resolve) => {
+        const normalizedToolId = typeof toolId === "string" ? toolId.trim() : "";
+        if (!room || !normalizedToolId) {
+          resolve({ ok: false, error: "missing_room_or_tool" });
+          return;
+        }
+
+        socket.emit("tool:release", { room, toolId: normalizedToolId }, (response = {}) => {
+          resolve(response);
+        });
+      }),
+    [room]
+  );
+
+  const useFileFixer = useCallback(
+    (content) =>
+      new Promise((resolve) => {
+        if (!room) {
+          resolve({ ok: false, error: "missing_room" });
+          return;
+        }
+
+        socket.emit(
+          "tool:fileFixer:repair",
+          { room, content: typeof content === "string" ? content : "" },
+          (response = {}) => {
+            resolve(response);
+          }
+        );
+      }),
+    [room]
   );
 
   const recordLeaderboardEntry = useCallback(
@@ -479,6 +543,10 @@ export default function useRoomState() {
       updateAvatar,
       latestLeaderboardEntry,
       recordLeaderboardEntry,
+      tools: toolsState,
+      claimTool,
+      releaseTool,
+      useFileFixer,
     }),
     [
       allEnigmesCompleted,
@@ -495,12 +563,16 @@ export default function useRoomState() {
       resetMission,
       room,
       recordLeaderboardEntry,
+      toolsState,
       sendMessage,
       startMission,
       timerRemaining,
       username,
       avatar,
       updateAvatar,
+      claimTool,
+      releaseTool,
+      useFileFixer,
     ]
   );
 

@@ -12,6 +12,7 @@ import errorImg from "../assets/error.png";
 import "../styles/enigme2.css";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
+import ToolsMenu from "../components/ToolsMenu";
 
 export default function Enigme2() {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export default function Enigme2() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
+          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>

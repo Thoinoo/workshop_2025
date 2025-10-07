@@ -11,6 +11,7 @@ import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
+import ToolsMenu from "../components/ToolsMenu";
 
 export default function Enigme1() {
   const navigate = useNavigate();
@@ -63,6 +64,7 @@ export default function Enigme1() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
+          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
@@ -131,17 +133,40 @@ export default function Enigme1() {
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
             <p>
-              Équipe, attention. Le réseau global vient de lever un drapeau rouge : la blockchain universelle est cassée. Certains blocs ont disparu, et sans le tout premier — le Bloc Genesis — le registre est orphelin : aucune transaction ne peut être vérifiée, aucun compte ne peut retrouver son historique. Vous êtes les derniers ingénieurs capables de réparer ça.
-
-Devant vous se trouve un terminal sécurisé, dernier vestige d’un nœud intact. Satoshi a laissé un indice. Votre mission : retrouver le Bloc Genesis, extraire le message caché qu’il contient et vérifier son intégrité. Sans ce bloc, le réseau restera en panne et les valeurs tomberont dans l’oubli.
-
-Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour lister, cat pour lire, decode pour déchiffrer, et hashinfo pour vérifier l’intégrité d’un bloc. Fouillez le répertoire genesis/, trouvez le fichier chiffré, décodez-le et prouvez que le bloc est authentique.
-              </p>
+              Equipe, alerte critique. Le reseau global vient de lever un drapeau rouge : la
+              blockchain universelle est hors service. Sans le Bloc Genesis, aucune transaction ne
+              peut etre verifiee et l historique se desintegre.
+            </p>
+            <p>
+              Devant vous se trouve un terminal securise, dernier point d acces fiable. Satoshi y a
+              laisse une piste. Votre mission est de retrouver le Bloc Genesis, d extraire le
+              message cache et de confirmer son integrite pour relancer la chaine.
+            </p>
+            <p>
+              Utilisez le terminal et tapez <code>help</code> si besoin. Gardez ces commandes a
+              portee de main :
+            </p>
+            <ul>
+              <li>
+                <code>ls</code> : explorer les repertoires disponibles
+              </li>
+              <li>
+                <code>cat &lt;fichier&gt;</code> : afficher le contenu d un fichier
+              </li>
+              <li>
+                <code>decode &lt;fichier&gt;</code> : dechiffrer les notes trouvees
+              </li>
+              <li>
+                <code>find &lt;mot&gt;</code> : reperer les fichiers contenant un terme cible
+              </li>
+            </ul>
+            <p>
+              Fouillez le dossier <code>genesis/</code>, identifiez le bon fichier, decodez les
+              indices et prouvez que le Bloc Genesis est authentique.
+            </p>
           </div>
 
-          
-
-          <GenesisTerminal room={room} />
+          <GenesisTerminal />
           <div className="enigme-hints">
             <h3>Indices</h3>
             <ul className="enigme-hints__list">
@@ -156,7 +181,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
                 >
                   Indice 1
                 </button>
-                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un grep -r permettrais de mettre en avant certains fichier peut être</span>
+                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un find [mot] permettrais de mettre en avant certains fichier peut être</span>
               </li>
               <li
                 className={`enigme-hints__item ${openedHints[1] ? "is-open" : ""}`}
@@ -182,7 +207,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
                 >
                   Indice 3
                 </button>
-                <span className="enigme-hints__content">Des mots semblent mis en avant après avoir déchiffré genesis_note2.enc, un grep -ril sur un de ces mots permettrait peut être de trouver le fichier qu'on doit vérifier avec hashinfo !</span>
+                <span className="enigme-hints__content">Des mots ressortent apres avoir dechiffre genesis_note2.enc. Un find -il [mot] sur l un de ces indices devrait pointer vers le fichier a traiter et à réparer, peut être avec un de vos outils !.</span>
               </li>
             </ul>
           </div>
@@ -197,3 +222,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
     </div>
   );
 }
+
+
+
+

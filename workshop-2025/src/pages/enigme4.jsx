@@ -10,6 +10,7 @@ import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
+import ToolsMenu from "../components/ToolsMenu";
 
 export default function Enigme4() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function Enigme4() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
+          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>

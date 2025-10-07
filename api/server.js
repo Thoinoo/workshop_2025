@@ -16,8 +16,17 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
+const AVAILABLE_TOOLS = {
+  fileFixer: { id: 'fileFixer' }
+};
 
-let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt } } }
+const buildInitialToolsState = () =>
+  Object.keys(AVAILABLE_TOOLS).reduce((acc, id) => {
+    acc[id] = { holder: null };
+    return acc;
+  }, {});
+
+let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } } } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
@@ -28,10 +37,63 @@ const ensureRoom = (roomName) => {
       enigmes: {},
       startedAt: null,
       missionSummary: null,
-      missionFailed: false
+      missionFailed: false,
+      tools: buildInitialToolsState()
     };
   }
+
+  if (!rooms[roomName].tools) {
+    rooms[roomName].tools = buildInitialToolsState();
+  }
+
   return rooms[roomName];
+};
+
+const emitToolsUpdate = (roomName) => {
+  const roomState = rooms[roomName];
+  if (!roomState || !roomState.tools) {
+    return;
+  }
+  io.to(roomName).emit('toolsUpdate', { ...roomState.tools });
+};
+
+const updateEnigmeStatusForRoom = (roomName, key, completed) => {
+  const normalizedKey = typeof key === 'string' ? key.trim() : '';
+  if (!normalizedKey) {
+    return;
+  }
+  const roomState = ensureRoom(roomName);
+  roomState.enigmes[normalizedKey] = Boolean(completed);
+  const enigmeStatuses = Object.values(roomState.enigmes);
+  const allSolved = enigmeStatuses.length > 0 && enigmeStatuses.every(Boolean);
+  if (allSolved && roomState.startedAt && !roomState.missionSummary) {
+    const completedAt = Date.now();
+    const elapsedMs = completedAt - roomState.startedAt;
+    roomState.missionSummary = {
+      completedAt,
+      elapsedSeconds: Math.max(0, Math.round(elapsedMs / 1000))
+    };
+  }
+  io.to(roomName).emit('enigmeStatusUpdate', {
+    key: normalizedKey,
+    completed: Boolean(completed)
+  });
+  io.to(roomName).emit('enigmesProgressSync', { ...roomState.enigmes });
+};
+
+const releaseToolsForUsername = (roomState, username) => {
+  if (!roomState?.tools || !username) {
+    return false;
+  }
+  let updated = false;
+  Object.keys(roomState.tools).forEach((toolId) => {
+    const toolState = roomState.tools[toolId];
+    if (toolState?.holder === username) {
+      roomState.tools[toolId] = { holder: null };
+      updated = true;
+    }
+  });
+  return updated;
 };
 
 const startTimerForRoom = (roomName, { reset = false } = {}) => {
@@ -107,8 +169,10 @@ const leaveRoom = (socket, roomName) => {
     return;
   }
 
+  let toolsUpdated = false;
   if (socket.data?.username) {
     room.players = room.players.filter((player) => player.username !== socket.data.username);
+    toolsUpdated = releaseToolsForUsername(room, socket.data.username) || toolsUpdated;
   }
 
   if (!room.players.length) {
@@ -119,6 +183,9 @@ const leaveRoom = (socket, roomName) => {
     delete rooms[roomName];
   } else {
     io.to(roomName).emit('playersUpdate', room.players);
+    if (toolsUpdated) {
+      emitToolsUpdate(roomName);
+    }
   }
 };
 
@@ -156,6 +223,7 @@ io.on('connection', (socket) => {
     socket.emit('chatHistory', roomState.messages);
     socket.emit('timerUpdate', timerValue);
     socket.emit('enigmesProgressSync', { ...roomState.enigmes });
+    socket.emit('toolsUpdate', { ...roomState.tools });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
     }
@@ -167,7 +235,8 @@ io.on('connection', (socket) => {
       missionStarted: roomState.timer.started,
       missionFailed: roomState.missionFailed,
       missionSummary: roomState.missionSummary ? { ...roomState.missionSummary } : null,
-      enigmes: { ...roomState.enigmes }
+      enigmes: { ...roomState.enigmes },
+      tools: { ...roomState.tools }
     });
 
     console.log(`${trimmedUsername} a rejoint la salle ${trimmedRoom}`);
@@ -206,35 +275,110 @@ io.on('connection', (socket) => {
     roomState.startedAt = null;
     roomState.missionSummary = null;
     roomState.missionFailed = false;
+    roomState.tools = buildInitialToolsState();
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
+    emitToolsUpdate(trimmedRoom);
   });
 
-  socket.on('enigmeStatusUpdate', ({ room, key, completed }) => {
+  socket.on('tool:claim', ({ room, toolId } = {}, callback = () => {}) => {
     const trimmedRoom = (room ?? '').trim();
-    const normalizedKey = typeof key === 'string' ? key.trim() : '';
-    if (!trimmedRoom || !normalizedKey) {
+    const normalizedToolId = typeof toolId === 'string' ? toolId.trim() : '';
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !normalizedToolId || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
       return;
     }
 
     const roomState = ensureRoom(trimmedRoom);
-    roomState.enigmes[normalizedKey] = Boolean(completed);
-    const enigmeStatuses = Object.values(roomState.enigmes);
-    const allSolved = enigmeStatuses.length > 0 && enigmeStatuses.every(Boolean);
-    if (allSolved && roomState.startedAt && !roomState.missionSummary) {
-      const completedAt = Date.now();
-      const elapsedMs = completedAt - roomState.startedAt;
-      roomState.missionSummary = {
-        completedAt,
-        elapsedSeconds: Math.max(0, Math.round(elapsedMs / 1000))
-      };
+    const toolState = roomState.tools[normalizedToolId];
+    if (!toolState) {
+      callback({ ok: false, error: 'unknown_tool' });
+      return;
     }
-    io.to(trimmedRoom).emit('enigmeStatusUpdate', {
-      key: normalizedKey,
-      completed: Boolean(completed)
+
+    if (toolState.holder && toolState.holder !== username) {
+      callback({ ok: false, error: 'already_held', holder: toolState.holder });
+      return;
+    }
+
+    roomState.tools[normalizedToolId] = { holder: username };
+    emitToolsUpdate(trimmedRoom);
+    callback({ ok: true, holder: username });
+  });
+
+  socket.on('tool:release', ({ room, toolId } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedToolId = typeof toolId === 'string' ? toolId.trim() : '';
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !normalizedToolId || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const toolState = roomState.tools[normalizedToolId];
+    if (!toolState) {
+      callback({ ok: false, error: 'unknown_tool' });
+      return;
+    }
+
+    if (toolState.holder !== username) {
+      callback({ ok: false, error: 'not_holder', holder: toolState.holder });
+      return;
+    }
+
+    roomState.tools[normalizedToolId] = { holder: null };
+    emitToolsUpdate(trimmedRoom);
+    callback({ ok: true });
+  });
+
+  socket.on('tool:fileFixer:repair', ({ room, content } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const toolState = roomState.tools.fileFixer;
+    if (!toolState) {
+      callback({ ok: false, error: 'unknown_tool' });
+      return;
+    }
+
+    if (toolState.holder !== username) {
+      callback({ ok: false, error: 'not_holder', holder: toolState.holder });
+      return;
+    }
+
+    const text = typeof content === 'string' ? content : '';
+    const containsSignature = text.includes('block_0365468.hash');
+    const randomMessage = Math.random() < 0.5 ? 'réparer' : 'réparation impossible';
+    const message = containsSignature ? 'réparer' : randomMessage;
+    const alreadyCompleted = roomState.enigmes.enigme1 === true;
+
+    if (containsSignature && !alreadyCompleted) {
+      updateEnigmeStatusForRoom(trimmedRoom, 'enigme1', true);
+    }
+
+    callback({
+      ok: true,
+      message,
+      success: containsSignature,
+      alreadyCompleted
     });
-    io.to(trimmedRoom).emit('enigmesProgressSync', { ...roomState.enigmes });
+  });
+
+  socket.on('enigmeStatusUpdate', ({ room, key, completed }) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+
+    updateEnigmeStatusForRoom(trimmedRoom, key, completed);
   });
 
   socket.on('avatarUpdate', ({ room, username, avatar }) => {

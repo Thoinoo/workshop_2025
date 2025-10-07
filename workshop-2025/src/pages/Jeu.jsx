@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import ToolsMenu from "../components/ToolsMenu";
 
 const TITLE_TEXT = "ALERTE CRITIQUE - Effondrement du systeme blockchain universel !";
 
@@ -111,6 +112,7 @@ export default function Jeu() {
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
         <div className="game-header-section game-header-section--actions">
+          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/")}>
             Retour a l'accueil
           </button>

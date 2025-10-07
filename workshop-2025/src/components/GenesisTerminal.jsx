@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import socket from "../socket";
-import { getEnigmesProgress, setEnigmeStatus } from "../utils/enigmesProgress";
 
 const INITIAL_BOOT_LINES = [
   "[BOOT SEQUENCE ERROR]",
@@ -26,16 +24,16 @@ const COMMANDS = [
     description: "Affiche le contenu d'un fichier texte",
   },
   {
-    command: "grep [-ril] <mot> [cible]",
-    description: "Recherche un mot dans un fichier ou un dossier",
+    command: "grep [-il] <mot>",
+    description: "Recherche un mot dans tous les fichiers disponibles",
   },
   {
     command: "decode <file>",
     description: "Decode automatiquement (base64, caesar, rot13)",
   },
   {
-    command: "hashinfo <file>",
-    description: "Analyse un bloc et verifie son hash",
+    command: "find <mot>",
+    description: "Liste les fichiers dont le nom contient le mot",
   },
   {
     command: "clear",
@@ -220,84 +218,6 @@ const FILE_DATA = {
   },
 };
 
-const HASH_RESPONSES = {
-  "genesis/block0.dat": [
-    "Recovered hash record:",
-    "Candidate ID: 0365460",
-    "Analysis: Nonce overflow detected; checksum rejected.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365460.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365460",
-    "Analysis: Nonce overflow detected; checksum rejected.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365461.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365461",
-    "Analysis: Merkle root mismatch.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365462.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365462",
-    "Analysis: Timestamp drift exceeds consensus tolerance.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365463.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365463",
-    "Analysis: Difficulty bits corrupted in header.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365464.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365464",
-    "Analysis: Header checksum mismatch detected.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365465.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365465",
-    "Analysis: Merkle root truncated; incomplete data.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365466.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365466",
-    "Analysis: Leading zero requirement not satisfied.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365467.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365467",
-    "Analysis: Embedded headline missing.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365468a.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365468a",
-    "Analysis: Suspicious padding appended to payload.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-  "genesis/block_0365468.hash": [
-    "Block #0 hash:",
-    "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-    "Status: VERIFIED [OK]",
-    "Blockchain restored...",
-    "",
-    "[BLOCKCHAIN RESTORED - LEVEL 1]",
-    'Genesis Block rebuilt successfully.',
-    'You may proceed to Block #1: "The Chain of Trust"',
-  ],
-  "genesis/block_0365469.hash": [
-    "Recovered hash record:",
-    "Candidate ID: 0365469",
-    "Analysis: Proof-of-work target unmet.",
-    "Status: INVALID [CORRUPTED]",
-  ],
-};
 
 const MEANINGFUL_KEYWORDS = [
   "the",
@@ -340,6 +260,19 @@ const normalizeFileKey = (input) => {
     }
   }
   return FILE_DATA[normalized] ? normalized : null;
+};
+
+const findFilesByName = (term) => {
+  if (!term) {
+    return [];
+  }
+
+  const normalizedTerm = term.toLowerCase();
+  const matches = Object.keys(FILE_DATA).filter((key) =>
+    key.toLowerCase().includes(normalizedTerm)
+  );
+
+  return matches.sort((a, b) => a.localeCompare(b));
 };
 
 const listDirectory = (path) => {
@@ -496,12 +429,11 @@ const collectFiles = (target, recursive) => {
 
 const runGrep = ({ args }) => {
   if (args.length === 0) {
-    return ["Usage: grep [-ril] <pattern> [path]"];
+    return ["Usage: grep [-il] <pattern> [path]"];
   }
 
   let index = 0;
   const flags = {
-    recursive: false,
     ignoreCase: false,
     listOnly: false,
   };
@@ -509,15 +441,14 @@ const runGrep = ({ args }) => {
   while (index < args.length && args[index].startsWith("-")) {
     const flagToken = args[index].slice(1);
     [...flagToken].forEach((flag) => {
-      if (flag === "r") flags.recursive = true;
-      else if (flag === "i") flags.ignoreCase = true;
+      if (flag === "i") flags.ignoreCase = true;
       else if (flag === "l") flags.listOnly = true;
     });
     index += 1;
   }
 
   if (index >= args.length) {
-    return ["Usage: grep [-ril] <pattern> [path]"];
+    return ["Usage: grep [-il] <pattern> [path]"];
   }
 
   const patternRaw = args[index];
@@ -525,7 +456,7 @@ const runGrep = ({ args }) => {
   const pattern = unquote(patternRaw);
 
   const target = index < args.length ? args[index] : ".";
-  const files = collectFiles(target, flags.recursive);
+  const files = collectFiles(target, true);
 
   if (files.length === 0) {
     return ["grep: no matching files found"];
@@ -577,20 +508,7 @@ const runGrep = ({ args }) => {
   return [...new Set(results)];
 };
 
-const resolveRoom = (room) => {
-  if (typeof room === "string" && room.trim()) {
-    return room.trim();
-  }
-  if (typeof window !== "undefined") {
-    const stored = sessionStorage.getItem("room");
-    if (stored && stored.trim()) {
-      return stored.trim();
-    }
-  }
-  return null;
-};
-
-export default function GenesisTerminal({ room }) {
+export default function GenesisTerminal() {
   const [log, setLog] = useState(() =>
     INITIAL_BOOT_LINES.map((line, index) => ({
       id: `boot-${index}`,
@@ -603,17 +521,6 @@ export default function GenesisTerminal({ room }) {
   const [historyIndex, setHistoryIndex] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
-  const hasValidatedRef = useRef(false);
-  const resolvedRoom = useMemo(() => resolveRoom(room), [room]);
-
-  useEffect(() => {
-    if (!resolvedRoom) {
-      hasValidatedRef.current = false;
-      return;
-    }
-    const progress = getEnigmesProgress(resolvedRoom);
-    hasValidatedRef.current = Boolean(progress?.enigme1);
-  }, [resolvedRoom]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -625,22 +532,6 @@ export default function GenesisTerminal({ room }) {
   const appendLog = useCallback((entries) => {
     setLog((current) => [...current, ...entries]);
   }, []);
-
-  const validateEnigme = useCallback(() => {
-    if (hasValidatedRef.current || !resolvedRoom) {
-      return;
-    }
-
-    const alreadyCompleted = Boolean(getEnigmesProgress(resolvedRoom)?.enigme1);
-    if (alreadyCompleted) {
-      hasValidatedRef.current = true;
-      return;
-    }
-
-    hasValidatedRef.current = true;
-    setEnigmeStatus(resolvedRoom, "enigme1", true);
-    socket.emit("enigmeStatusUpdate", { room: resolvedRoom, key: "enigme1", completed: true });
-  }, [resolvedRoom]);
 
   const executeCommand = useCallback(
     (rawCommand) => {
@@ -659,9 +550,6 @@ export default function GenesisTerminal({ room }) {
         const lines = Array.isArray(text) ? text : [text];
         lines.forEach((line) => {
           outputs.push({ id: `out-${Date.now()}-${Math.random()}`, role: "output", text: line });
-          if (typeof line === "string" && line.toLowerCase().includes("blockchain restored")) {
-            validateEnigme();
-          }
         });
       };
 
@@ -701,22 +589,17 @@ export default function GenesisTerminal({ room }) {
           }
           break;
         }
-        case "hashinfo": {
+        case "find": {
           if (!args[0]) {
-            addOutput("hashinfo: missing block file operand");
+            addOutput("find: missing search term");
             break;
           }
-          const data = getFileData(args[0]);
-          if (!data) {
-            addOutput(`hashinfo: ${args[0]}: No such file`);
-            break;
+          const matches = findFilesByName(args[0]);
+          if (!matches.length) {
+            addOutput(`find: no file matching "${args[0]}"`);
+          } else {
+            matches.forEach((match) => addOutput(match));
           }
-          const response = HASH_RESPONSES[data.key];
-          if (!response) {
-            addOutput(`hashinfo: ${args[0]}: Unsupported target`);
-            break;
-          }
-          response.forEach((line) => addOutput(line));
           break;
         }
         case "clear":
@@ -728,7 +611,7 @@ export default function GenesisTerminal({ room }) {
 
       appendLog([logCommand, ...outputs]);
     },
-    [appendLog, validateEnigme]
+    [appendLog]
   );
 
   const handleSubmit = useCallback(
