@@ -6,11 +6,13 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
-import { setEnigmeStatus } from "../utils/enigmesProgress";
+import { getEnigmesProgress, setEnigmeStatus } from "../utils/enigmesProgress";
+import socket from "../socket";
 
 export default function Enigme3() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+    useRoomState();
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
 
@@ -24,7 +26,13 @@ export default function Enigme3() {
     const normalized = answer.trim().toLowerCase();
 
     if (normalized === "banque") {
-      setEnigmeStatus("enigme3", true);
+      const alreadyCompleted = Boolean(getEnigmesProgress(room)?.enigme3);
+      if (!alreadyCompleted) {
+        setEnigmeStatus(room, "enigme3", true);
+        if (room) {
+          socket.emit("enigmeStatusUpdate", { room, key: "enigme3", completed: true });
+        }
+      }
       setFeedback({ type: "success", message: "Reponse correcte ! Enigme validee." });
       setAnswer("");
     } else {
@@ -36,7 +44,7 @@ export default function Enigme3() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme3" />
+          <EnigmesGridMenu active="enigme3" room={room} />
         </div>
         <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />

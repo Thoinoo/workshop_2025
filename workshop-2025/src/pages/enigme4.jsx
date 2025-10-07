@@ -10,7 +10,8 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme4() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+    useRoomState();
 
   // Drag & Drop des palettes
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function Enigme4() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme4" />
+          <EnigmesGridMenu active="enigme4" room={room} />
         </div>
 
         <div className="game-header-section game-header-section--timer">

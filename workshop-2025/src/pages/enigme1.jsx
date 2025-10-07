@@ -10,7 +10,8 @@ import GenesisTerminal from "../components/GenesisTerminal";
 
 export default function Enigme1() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
+    useRoomState();
 
   useEffect(() => {
     if (!missionStarted) {
@@ -22,7 +23,7 @@ export default function Enigme1() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme1" />
+          <EnigmesGridMenu active="enigme1" room={room} />
         </div>
 
         <div className="game-header-section game-header-section--timer">
@@ -65,7 +66,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
               </p>
           </div>
 
-          <GenesisTerminal />
+          <GenesisTerminal room={room} />
         </section>
 
         <aside className="chat-panel">

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ENIGMES_PROGRESS_EVENT,
   getEnigmesProgress,
+  getStorageKeyForRoom,
 } from "../utils/enigmesProgress";
 
 const GRID_ITEMS = [
@@ -54,42 +55,71 @@ function GridButtons({ active, onAfterNavigate, completed }) {
   );
 }
 
-export default function EnigmesGridMenu({ active }) {
+const extractCompletedKeys = (progress = {}) =>
+  new Set(
+    Object.entries(progress)
+      .filter(([, value]) => Boolean(value))
+      .map(([key]) => key)
+  );
+
+const resolveRoom = (room) => {
+  if (typeof room === "string" && room.trim()) {
+    return room.trim();
+  }
+  if (typeof window !== "undefined") {
+    const stored = sessionStorage.getItem("room");
+    if (stored && stored.trim()) {
+      return stored.trim();
+    }
+  }
+  return null;
+};
+
+export default function EnigmesGridMenu({ active, room }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
-  const [completedKeys, setCompletedKeys] = useState(() => {
-    const progress = getEnigmesProgress();
-    return new Set(
-      Object.entries(progress)
-        .filter(([, value]) => Boolean(value))
-        .map(([key]) => key)
-    );
-  });
+  const resolvedRoom = useMemo(() => resolveRoom(room), [room]);
+  const [completedKeys, setCompletedKeys] = useState(() =>
+    extractCompletedKeys(getEnigmesProgress(resolvedRoom))
+  );
 
   useEffect(() => {
+    setCompletedKeys(extractCompletedKeys(getEnigmesProgress(resolvedRoom)));
+  }, [resolvedRoom]);
+
+  useEffect(() => {
+    if (!resolvedRoom) {
+      return () => {};
+    }
+
     const updateFromStorage = () => {
-      const progress = getEnigmesProgress();
-      setCompletedKeys(
-        new Set(
-          Object.entries(progress)
-            .filter(([, value]) => Boolean(value))
-            .map(([key]) => key)
-        )
-      );
+      setCompletedKeys(extractCompletedKeys(getEnigmesProgress(resolvedRoom)));
     };
 
-    const handleProgressEvent = () => {
-      updateFromStorage();
+    const handleProgressEvent = (event) => {
+      if (event?.detail?.room && event.detail.room !== resolvedRoom) {
+        return;
+      }
+      if (event?.detail?.room === resolvedRoom) {
+        setCompletedKeys(extractCompletedKeys(event.detail.progress));
+      } else {
+        updateFromStorage();
+      }
     };
 
     window.addEventListener(ENIGMES_PROGRESS_EVENT, handleProgressEvent);
-    window.addEventListener("storage", handleProgressEvent);
+    const storageListener = (event) => {
+      if (event.key && event.key === getStorageKeyForRoom(resolvedRoom)) {
+        updateFromStorage();
+      }
+    };
+    window.addEventListener("storage", storageListener);
 
     return () => {
       window.removeEventListener(ENIGMES_PROGRESS_EVENT, handleProgressEvent);
-      window.removeEventListener("storage", handleProgressEvent);
+      window.removeEventListener("storage", storageListener);
     };
-  }, []);
+  }, [resolvedRoom]);
 
   useEffect(() => {
     setIsOpen(false);

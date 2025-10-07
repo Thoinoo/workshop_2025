@@ -9,7 +9,7 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme2() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
 
   useEffect(() => {
     if (!missionStarted) {
@@ -21,7 +21,7 @@ export default function Enigme2() {
     <div className="game-page">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
-          <EnigmesGridMenu active="enigme2" />
+          <EnigmesGridMenu active="enigme2" room={room} />
         </div>
 
         <div className="game-header-section game-header-section--timer">
