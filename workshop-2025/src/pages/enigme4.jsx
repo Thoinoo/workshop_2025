@@ -10,7 +10,7 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme4() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage } = useRoomState();
+  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
 
   // Drag & Drop des palettes
   useEffect(() => {
@@ -62,6 +62,12 @@ export default function Enigme4() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!missionStarted) {
+      navigate("/preparation", { replace: true });
+    }
+  }, [missionStarted, navigate]);
+
   return (
     <div className="game-page">
       <header className="game-header">
@@ -70,7 +76,7 @@ export default function Enigme4() {
         </div>
 
         <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={timerRemaining} />
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -85,20 +91,20 @@ export default function Enigme4() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
-                prochaine étape.
+                Agent <strong>{username}</strong>, decryptez les indices pour progresser vers la
+                prochaine etape.
               </>
             ) : (
-              "Préparez-vous à résoudre la prochaine énigme."
+              "Preparez-vous a resoudre la prochaine enigme."
             )}
           </p>
-          <h2>Énigme 4</h2>
+          <h2>Enigme 4</h2>
 
           <div className="container">
-            <h1>Logistique : répartissez les palettes correctement</h1>
+            <h1>Logistique : repartissez les palettes correctement</h1>
             <h2>
               Glissez les palettes dans les bons camions selon la destination. Attention, une
-              mauvaise répartition déclenche l'alarme&nbsp;!
+              mauvaise repartition declenche l'alarme&nbsp;!
             </h2>
 
             <div id="logistique-jeu">
@@ -141,7 +147,7 @@ export default function Enigme4() {
 
             <div className="input-area">
               <input type="text" id="reponse" placeholder="Entrez votre mot de passe" />
-              <button onClick={() => alert("Validation à implémenter")}>Valider</button>
+              <button onClick={() => alert("Validation a implementer")}>Valider</button>
             </div>
 
             <p id="resultat"></p>

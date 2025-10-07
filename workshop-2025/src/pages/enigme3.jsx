@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -8,7 +9,13 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme3() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage } = useRoomState();
+  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+
+  useEffect(() => {
+    if (!missionStarted) {
+      navigate("/preparation", { replace: true });
+    }
+  }, [missionStarted, navigate]);
 
   return (
     <div className="game-page">
@@ -17,7 +24,7 @@ export default function Enigme3() {
           <EnigmesGridMenu active="enigme3" />
         </div>
         <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={timerRemaining} />
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
         <div className="game-header-section game-header-section--actions">
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
@@ -31,32 +38,32 @@ export default function Enigme3() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
-                prochaine étape.
+                Agent <strong>{username}</strong>, decryptez les indices pour progresser vers la
+                prochaine etape.
               </>
             ) : (
-              "Préparez-vous à résoudre la première énigme."
+              "Preparez-vous a resoudre la premiere enigme."
             )}
           </p>
-          <h2>Énigme 3</h2>
+          <h2>Enigme 3</h2>
 
           <p>
-            Sur le premier coffre : "J'avais 10 pièces, j'en perds 8."<br />
-            Sur le deuxième coffre : "J'ai 5 billets, je les partage : 5 à 5."<br />
-            Sur le troisième coffre : "J'achète 2 lingots à 7 pièces chacun."<br />
-            Sur le quatrième coffre : "Je cache 20 lingots, mais on m'en retrouve 3."<br />
-            Sur le cinquième coffre : "Je trouve 3 sacs de 7 pièces chacun."<br />
-            Sur le sixième coffre : "J'avais 12 pièces, j'en donne 7."<br />
+            Sur le premier coffre : "J'avais 10 pieces, j'en perds 8."<br />
+            Sur le deuxieme coffre : "J'ai 5 billets, je les partage : 5 a 5."<br />
+            Sur le troisieme coffre : "J'achete 2 lingots a 7 pieces chacun."<br />
+            Sur le quatrieme coffre : "Je cache 20 lingots, mais on m'en retrouve 3."<br />
+            Sur le cinquieme coffre : "Je trouve 3 sacs de 7 pieces chacun."<br />
+            Sur le sixieme coffre : "J'avais 12 pieces, j'en donne 7."<br />
             <strong>Indice :</strong> Nous recherchons un mot.
           </p>
 
           <div className="reponse-zone">
-            <input type="text" placeholder="Écris le mot secret" className="reponse-input" />
+            <input type="text" placeholder="Ecris le mot secret" className="reponse-input" />
             <button
               className="reponse-button"
-              onClick={() => alert("Vérification de la réponse (à implémenter)")}
+              onClick={() => alert("Verification de la reponse (a implementer)")}
             >
-              RÉPONSE
+              REPONSE
             </button>
           </div>
         </section>

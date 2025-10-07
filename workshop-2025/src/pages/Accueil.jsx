@@ -1,42 +1,114 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./lobby.css";
 
-export default function Accueil() {
-  const [pseudo, setPseudo] = useState("");
-  const [room, setRoom] = useState("");
-  const navigate = useNavigate();
+const MODE_JOIN = "join";
+const MODE_CREATE = "create";
 
-  const handleJoin = (event) => {
+const generateRoomCode = () => String(Math.floor(1000 + Math.random() * 9000));
+
+export default function Accueil() {
+  const navigate = useNavigate();
+  const [pseudo, setPseudo] = useState("");
+  const [mode, setMode] = useState(MODE_JOIN);
+  const [joinRoom, setJoinRoom] = useState("");
+  const [createRoom, setCreateRoom] = useState(() => generateRoomCode());
+
+  const canSubmitJoin = useMemo(
+    () => pseudo.trim().length > 0 && joinRoom.trim().length === 4,
+    [pseudo, joinRoom]
+  );
+
+  const canSubmitCreate = useMemo(
+    () => pseudo.trim().length > 0 && createRoom.trim().length === 4,
+    [pseudo, createRoom]
+  );
+
+  const persistIdentity = (roomCode, isHost) => {
+    sessionStorage.setItem("pseudo", pseudo.trim());
+    sessionStorage.setItem("room", roomCode.trim());
+    sessionStorage.setItem("isHost", isHost ? "true" : "false");
+    sessionStorage.setItem("missionStarted", "false");
+  };
+
+  const handleJoinSubmit = (event) => {
     event?.preventDefault();
-    if (pseudo.trim() && room.trim()) {
-      sessionStorage.setItem("pseudo", pseudo.trim());
-      sessionStorage.setItem("room", room.trim());
-      navigate("/jeu");
+    if (!canSubmitJoin) {
+      return;
     }
+
+    persistIdentity(joinRoom, false);
+    navigate("/preparation");
+  };
+
+  const handleCreateSubmit = (event) => {
+    event?.preventDefault();
+    if (!canSubmitCreate) {
+      return;
+    }
+
+    persistIdentity(createRoom, true);
+    navigate("/preparation");
+  };
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    if (newMode === MODE_CREATE && createRoom.trim().length === 0) {
+      setCreateRoom(generateRoomCode());
+    }
+  };
+
+  const handleRegenerate = () => {
+    setCreateRoom(generateRoomCode());
   };
 
   return (
     <div className="game-page">
       <header className="game-header">
-        <div>
+        <div className="game-header-section game-header-section--info">
           <p className="game-room">Bienvenue dans l'escape game</p>
           <p className="game-username">
-            Créez votre identité d'agent, choisissez une salle et rejoignez votre équipe
-            pour démarrer l'aventure.
+            Choisissez votre couverture d'agent, puis creez une nouvelle mission ou rejoignez votre
+            equipe pour la lancer.
           </p>
+        </div>
+        <div className="game-header-section game-header-section--timer">
+          <div className="home-code-badge">Mission top secret</div>
+        </div>
+        <div className="game-header-section game-header-section--actions">
+          
         </div>
       </header>
 
       <div className="game-layout">
         <section className="game-card">
-          <h2>Rejoindre une salle</h2>
+        <div className="home-toggle">
+            <button
+              type="button"
+              className={`home-toggle__option ${mode === MODE_JOIN ? "is-active" : ""}`}
+              onClick={() => handleModeChange(MODE_JOIN)}
+            >
+              Rejoindre
+            </button>
+            <button
+              type="button"
+              className={`home-toggle__option ${mode === MODE_CREATE ? "is-active" : ""}`}
+              onClick={() => handleModeChange(MODE_CREATE)}
+            >
+              Creer
+            </button>
+          </div>
+          <h2>{mode === MODE_JOIN ? "Rejoindre une salle" : "Creer une salle"}</h2>
           <p>
-            Indiquez votre pseudo ainsi que le numéro de salle communiqué par votre maître
-            du jeu. Vous pourrez ensuite retrouver vos coéquipiers dans le lobby.
+            {mode === MODE_JOIN
+              ? "Entrez le code de salle communique par votre controleur pour integrer l'equipe deja en place."
+              : "Un code de salle unique est genere pour vous. Partagez-le avec l'equipe avant de lancer la mission."}
           </p>
 
-          <form className="lobby-form" onSubmit={handleJoin}>
+          <form
+            className="lobby-form"
+            onSubmit={mode === MODE_JOIN ? handleJoinSubmit : handleCreateSubmit}
+          >
             <label>
               Pseudo
               <input
@@ -47,40 +119,45 @@ export default function Accueil() {
               />
             </label>
 
-            <label>
-              Numéro de salle
-              <input
-                className="lobby-input"
-                placeholder="Ex : 4521"
-                value={room}
-                onChange={(event) => setRoom(event.target.value)}
-              />
-            </label>
+            {mode === MODE_JOIN ? (
+              <label>
+                Code de salle
+                <input
+                  className="lobby-input"
+                  placeholder="Ex : 4521"
+                  value={joinRoom}
+                  onChange={(event) =>
+                    setJoinRoom(event.target.value.replace(/\D+/g, "").slice(0, 4))
+                  }
+                />
+              </label>
+            ) : null}
 
-            <button type="submit" className="game-primary">
-              Accéder au lobby
+            <button
+              type="submit"
+              className="game-primary"
+              disabled={mode === MODE_JOIN ? !canSubmitJoin : !canSubmitCreate}
+            >
+              {mode === MODE_JOIN ? "Rejoindre la mission" : "Creer la salle"}
             </button>
           </form>
         </section>
 
         <aside className="chat-panel">
           <div className="puzzle-instructions">
-            <h3>Avant de commencer</h3>
+            <h3>Briefing express</h3>
             <ul>
-              <li>Assurez-vous d'avoir une connexion stable et un micro fonctionnel.</li>
-              <li>Partagez le numéro de salle avec tous les membres de votre équipe.</li>
-              <li>
-                Préparez-vous à communiquer : la coopération sera la clé pour résoudre les
-                énigmes.
-              </li>
+              <li>Verifiez votre micro et votre connexion avant d'entrer.</li>
+              <li>Partagez le code de salle a chaque membre de l'equipe.</li>
+              <li>Le chronometre ne partira qu'une fois la mission lancee.</li>
             </ul>
           </div>
 
           <div className="lobby-insight">
-            <h3>Besoin d'aide ?</h3>
+            <h3>Astuce</h3>
             <p>
-              Si vous rencontrez un problème pour rejoindre une salle, vérifiez que le
-              numéro est correct ou contactez votre maître du jeu.
+              En tant qu'hote, vous pourrez attendre vos coequipiers sur l'ecran de prepartie avant
+              de lancer le compteur.
             </p>
           </div>
         </aside>

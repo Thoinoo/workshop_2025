@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -8,7 +9,13 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme1() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage } = useRoomState();
+  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+
+  useEffect(() => {
+    if (!missionStarted) {
+      navigate("/preparation", { replace: true });
+    }
+  }, [missionStarted, navigate]);
 
   return (
     <div className="game-page">
@@ -18,7 +25,7 @@ export default function Enigme1() {
         </div>
 
         <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={timerRemaining} />
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -33,26 +40,26 @@ export default function Enigme1() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, décryptez les indices pour progresser vers la
-                prochaine étape.
+                Agent <strong>{username}</strong>, decryptez les indices pour progresser vers la
+                prochaine etape.
               </>
             ) : (
-              "Préparez-vous à résoudre la première énigme."
+              "Preparez-vous a resoudre la premiere enigme."
             )}
           </p>
-          <h2>Énigme 1</h2>
+          <h2>Enigme 1</h2>
           <p>
-            Observez attentivement les éléments fournis par votre maître du jeu. Chaque détail
-            compte et l'échange d'idées avec votre équipe sera déterminant.
+            Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
+            compte et l'echange d'idees avec votre equipe sera determinant.
           </p>
 
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
             <ul>
-              <li>Partagez vos découvertes dans le chat pour faire progresser l'équipe.</li>
-              <li>Notez les indices importants et confrontez vos hypothèses.</li>
+              <li>Partagez vos decouvertes dans le chat pour faire progresser l'equipe.</li>
+              <li>Notez les indices importants et confrontez vos hypotheses.</li>
               <li>
-                Lorsque vous êtes prêts, contactez le maître du jeu pour valider votre réponse.
+                Lorsque vous etes prets, contactez le maitre du jeu pour valider votre reponse.
               </li>
             </ul>
           </div>

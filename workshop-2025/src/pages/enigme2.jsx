@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -8,7 +9,13 @@ import EnigmesGridMenu from "../components/EnigmesGrid";
 
 export default function Enigme2() {
   const navigate = useNavigate();
-  const { username, players, chat, timerRemaining, sendMessage } = useRoomState();
+  const { username, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+
+  useEffect(() => {
+    if (!missionStarted) {
+      navigate("/preparation", { replace: true });
+    }
+  }, [missionStarted, navigate]);
 
   return (
     <div className="game-page">
@@ -18,7 +25,7 @@ export default function Enigme2() {
         </div>
 
         <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={timerRemaining} />
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -33,24 +40,24 @@ export default function Enigme2() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, restez concentré pour franchir ce nouvel obstacle.
+                Agent <strong>{username}</strong>, restez concentre pour franchir ce nouvel obstacle.
               </>
             ) : (
-              "Consolidez votre stratégie pour attaquer l'énigme numéro deux."
+              "Consolidez votre strategie pour attaquer l'enigme numero deux."
             )}
           </p>
-          <h2>Énigme 2</h2>
+          <h2>Enigme 2</h2>
           <p>
-            Le réseau ennemi brouille les communications. Rassemblez les fragments d'informations
-            et reconstruisez le message caché avant que la connexion ne soit perdue.
+            Le reseau ennemi brouille les communications. Rassemblez les fragments d'informations et
+            reconstruisez le message cache avant que la connexion ne soit perdue.
           </p>
 
           <div className="puzzle-instructions">
             <h3>Objectifs</h3>
             <ul>
-              <li>Identifiez les séquences qui se répètent dans les transmissions.</li>
-              <li>Associez chaque symbole à son code couleur pour révéler le message.</li>
-              <li>Validez votre hypothèse auprès du maître du jeu pour passer à l'étape suivante.</li>
+              <li>Identifiez les sequences qui se repetent dans les transmissions.</li>
+              <li>Associez chaque symbole a son code couleur pour reveler le message.</li>
+              <li>Validez votre hypothese aupres du maitre du jeu pour passer a l'etape suivante.</li>
             </ul>
           </div>
         </section>

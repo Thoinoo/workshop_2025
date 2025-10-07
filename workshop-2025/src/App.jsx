@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Accueil from "./pages/Accueil";
 import Jeu from "./pages/Jeu";
+import Preparation from "./pages/Preparation";
 import Enigme1 from "./pages/enigme1";
 import Enigme2 from "./pages/enigme2";
 import Enigme3 from "./pages/enigme3";
@@ -11,6 +12,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Accueil />} />
+        <Route path="/preparation" element={<Preparation />} />
         <Route path="/jeu" element={<Jeu />} />
         <Route path="/enigme1" element={<Enigme1 />} />
         <Route path="/enigme2" element={<Enigme2 />} />
