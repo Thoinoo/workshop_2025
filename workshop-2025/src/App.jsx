@@ -6,6 +6,7 @@ import Enigme1 from "./pages/enigme1";
 import Enigme2 from "./pages/enigme2";
 import Enigme3 from "./pages/enigme3";
 import Enigme4 from "./pages/enigme4";
+import Victory from "./pages/Victory";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/enigme2" element={<Enigme2 />} />
         <Route path="/enigme3" element={<Enigme3 />} />
         <Route path="/enigme4" element={<Enigme4 />} />
+        <Route path="/victoire" element={<Victory />} />
       </Routes>
     </Router>
   );

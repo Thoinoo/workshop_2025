@@ -1,24 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { clearEnigmesProgress, setEnigmeStatus, setEnigmesProgress } from "../utils/enigmesProgress";
+import {
+  clearEnigmesProgress,
+  getEnigmesProgress,
+  setEnigmeStatus,
+  setEnigmesProgress,
+} from "../utils/enigmesProgress";
 
 const STORAGE_KEYS = {
   missionStarted: "missionStarted",
   pseudo: "pseudo",
   room: "room",
   isHost: "isHost",
+  missionStartTimestamp: "missionStartTimestamp",
+  missionElapsedSeconds: "missionElapsedSeconds",
+  missionCompleted: "missionCompleted",
 };
+
+const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4"];
 
 const readBoolean = (key, fallback = false) => sessionStorage.getItem(key) === "true" || fallback;
 
 export default function useRoomState() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [username] = useState(() => sessionStorage.getItem(STORAGE_KEYS.pseudo) || "");
   const [room] = useState(() => sessionStorage.getItem(STORAGE_KEYS.room) || "");
   const [isHost] = useState(() => readBoolean(STORAGE_KEYS.isHost));
   const [missionStarted, setMissionStarted] = useState(() =>
     readBoolean(STORAGE_KEYS.missionStarted, false)
+  );
+  const [missionCompleted, setMissionCompleted] = useState(() =>
+    readBoolean(STORAGE_KEYS.missionCompleted, false)
+  );
+  const [missionElapsedSeconds, setMissionElapsedSeconds] = useState(() => {
+    const stored = sessionStorage.getItem(STORAGE_KEYS.missionElapsedSeconds);
+    return stored ? Number(stored) : null;
+  });
+  const [enigmesProgressState, setEnigmesProgressState] = useState(() =>
+    getEnigmesProgress(sessionStorage.getItem(STORAGE_KEYS.room) || "")
   );
 
   const [players, setPlayers] = useState([]);
@@ -56,12 +77,25 @@ export default function useRoomState() {
     const handleMissionStarted = () => {
       sessionStorage.setItem(STORAGE_KEYS.missionStarted, "true");
       setMissionStarted(true);
+      sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+      setMissionCompleted(false);
+      if (!sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp)) {
+        sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
+      }
+      sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
+      setMissionElapsedSeconds(null);
     };
 
     const handleMissionReset = () => {
       sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
       setMissionStarted(false);
       clearEnigmesProgress(room);
+      setEnigmesProgressState({});
+      sessionStorage.removeItem(STORAGE_KEYS.missionStartTimestamp);
+      sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
+      sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+      setMissionCompleted(false);
+      setMissionElapsedSeconds(null);
     };
 
     const handleEnigmeStatusUpdate = (payload = {}) => {
@@ -69,16 +103,24 @@ export default function useRoomState() {
       if (typeof key !== "string" || !key) {
         return;
       }
-      setEnigmeStatus(room, key, Boolean(completed));
+      const normalized = Boolean(completed);
+      setEnigmeStatus(room, key, normalized);
+      setEnigmesProgressState((current) => ({
+        ...(current && typeof current === "object" ? current : {}),
+        [key]: normalized,
+      }));
     };
 
     const handleEnigmesProgressSync = (progress = {}) => {
-      setEnigmesProgress(room, progress && typeof progress === "object" ? progress : {});
+      const normalized = progress && typeof progress === "object" ? progress : {};
+      setEnigmesProgress(room, normalized);
+      setEnigmesProgressState(normalized);
     };
 
     setPlayers([]);
     setChat([]);
     setTimerRemaining(null);
+    setEnigmesProgressState(getEnigmesProgress(room));
 
     socket.emit("joinRoom", { username, room }, (initialState = {}) => {
       if (Array.isArray(initialState.players)) {
@@ -94,11 +136,16 @@ export default function useRoomState() {
         const started = initialState.missionStarted;
         sessionStorage.setItem(STORAGE_KEYS.missionStarted, started ? "true" : "false");
         setMissionStarted(started);
+        if (started && !sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp)) {
+          sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
+        }
       }
       if (initialState.enigmes && typeof initialState.enigmes === "object") {
         setEnigmesProgress(room, initialState.enigmes);
+        setEnigmesProgressState(initialState.enigmes);
       } else {
         clearEnigmesProgress(room);
+        setEnigmesProgressState({});
       }
     });
 
@@ -143,7 +190,12 @@ export default function useRoomState() {
     }
 
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, "true");
+    sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+    sessionStorage.setItem(STORAGE_KEYS.missionStartTimestamp, Date.now().toString());
+    sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
     setMissionStarted(true);
+    setMissionCompleted(false);
+    setMissionElapsedSeconds(null);
     socket.emit("startMission", { room });
   }, [room]);
 
@@ -151,10 +203,56 @@ export default function useRoomState() {
     sessionStorage.setItem(STORAGE_KEYS.missionStarted, "false");
     setMissionStarted(false);
     clearEnigmesProgress(room);
+    setEnigmesProgressState({});
+    sessionStorage.removeItem(STORAGE_KEYS.missionStartTimestamp);
+    sessionStorage.removeItem(STORAGE_KEYS.missionElapsedSeconds);
+    sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "false");
+    setMissionCompleted(false);
+    setMissionElapsedSeconds(null);
     if (room) {
       socket.emit("resetMission", { room });
     }
   }, [room]);
+
+  const completedEnigmesCount = useMemo(
+    () =>
+      REQUIRED_ENIGMES.filter((key) => Boolean(enigmesProgressState && enigmesProgressState[key]))
+        .length,
+    [enigmesProgressState]
+  );
+
+  const allEnigmesCompleted = useMemo(
+    () => completedEnigmesCount >= REQUIRED_ENIGMES.length && REQUIRED_ENIGMES.length > 0,
+    [completedEnigmesCount]
+  );
+
+  useEffect(() => {
+    if (!missionStarted || !room) {
+      return;
+    }
+    if (!allEnigmesCompleted) {
+      return;
+    }
+    if (!missionCompleted) {
+      const startTsRaw = sessionStorage.getItem(STORAGE_KEYS.missionStartTimestamp);
+      const startTs = startTsRaw ? Number(startTsRaw) : Date.now();
+      const elapsed = Math.max(0, Math.round((Date.now() - startTs) / 1000));
+      sessionStorage.setItem(STORAGE_KEYS.missionElapsedSeconds, String(elapsed));
+      sessionStorage.setItem(STORAGE_KEYS.missionCompleted, "true");
+      setMissionElapsedSeconds(elapsed);
+      setMissionCompleted(true);
+    }
+    if (location.pathname !== "/victoire") {
+      navigate("/victoire", { replace: true });
+    }
+  }, [
+    allEnigmesCompleted,
+    location.pathname,
+    missionCompleted,
+    missionStarted,
+    navigate,
+    room,
+  ]);
 
   const value = useMemo(
     () => ({
@@ -168,10 +266,20 @@ export default function useRoomState() {
       missionStarted,
       startMission,
       resetMission,
+      enigmesProgress: enigmesProgressState,
+      completedEnigmesCount,
+      allEnigmesCompleted,
+      missionCompleted,
+      missionElapsedSeconds,
     }),
     [
+      allEnigmesCompleted,
       chat,
+      completedEnigmesCount,
+      enigmesProgressState,
       isHost,
+      missionCompleted,
+      missionElapsedSeconds,
       missionStarted,
       players,
       resetMission,
