@@ -37,31 +37,13 @@ export default function Enigme2() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <p className="game-username">
-            {username ? (
-              <>
-                Agent <strong>{username}</strong>, restez concentre pour franchir ce nouvel obstacle.
-              </>
-            ) : (
-              "Consolidez votre strategie pour attaquer l'enigme numero deux."
-            )}
-          </p>
           <h2>Enigme 2</h2>
           <p>
-            Le reseau ennemi brouille les communications. Rassemblez les fragments d'informations et
-            reconstruisez le message cache avant que la connexion ne soit perdue.
+            La base de données est corrompu trouver un moyen de stocker les données de manière sécurisée.
           </p>
-
           <div className="puzzle-instructions">
-            <h3>Objectifs</h3>
-            <ul>
-              <li>Identifiez les sequences qui se repetent dans les transmissions.</li>
-              <li>Associez chaque symbole a son code couleur pour reveler le message.</li>
-              <li>Validez votre hypothese aupres du maitre du jeu pour passer a l'etape suivante.</li>
-            </ul>
           </div>
         </section>
-
         <aside className="chat-panel">
           <PlayersList players={players} />
           <Chat chat={chat} onSendMessage={sendMessage} />

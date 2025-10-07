@@ -39,14 +39,14 @@ const startTimerForRoom = (roomName) => {
   }
 
   room.timer.interval = setInterval(() => {
-    room.timer.remaining = Math.max(0, room.timer.remaining - 1);
+    room.timer.remaining = Math.max(0, room.timer.remaining - 0.1);
     io.to(roomName).emit('timerUpdate', room.timer.remaining);
 
     if (room.timer.remaining <= 0) {
       clearInterval(room.timer.interval);
       room.timer.interval = null;
     }
-  }, 1000);
+  }, 100);
 
   io.to(roomName).emit('timerUpdate', room.timer.remaining);
   return room.timer.remaining;
