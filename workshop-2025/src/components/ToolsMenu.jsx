@@ -212,11 +212,11 @@ export default function ToolsMenu() {
         onClick={handleToggle}
         aria-expanded={isOpen ? "true" : "false"}
       >
-        Outils
+        <img src={toolsMenuIllustration} alt="Illustration du panneau d'outils" className="tools-menu__illustration" />
       </button>
       <div className="tools-menu__panel" aria-hidden={isOpen ? "false" : "true"}>
         <header className="tools-menu__header">
-         
+          
           <div className="tools-menu__title">
             <h3>Outils de mission</h3>
             <p>Chaque outil est attribue automatiquement a un agent.</p>
