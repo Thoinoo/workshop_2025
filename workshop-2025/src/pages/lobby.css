@@ -778,3 +778,63 @@ body {
     width: 100%;
   }
 }
+
+.enigme-hints {
+  margin-top: 1.5rem;
+}
+
+.enigme-hints h3 {
+  margin-bottom: 0.75rem;
+}
+
+.enigme-hints__list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.enigme-hints__item {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.enigme-hints__item.is-open {
+  border-color: var(--accent, #00ffd1);
+  background: rgba(0, 255, 209, 0.08);
+}
+
+.enigme-hints__toggle {
+  width: 100%;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.enigme-hints__content {
+  display: block;
+  margin-top: 0.35rem;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.2s ease, max-height 0.2s ease;
+}
+
+.enigme-hints__item.is-open .enigme-hints__content {
+  opacity: 1;
+  max-height: 4rem;
+}
+
