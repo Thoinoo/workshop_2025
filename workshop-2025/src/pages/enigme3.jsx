@@ -8,11 +8,14 @@ import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 import { getEnigmesProgress, setEnigmeStatus } from "../utils/enigmesProgress";
 import socket from "../socket";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme3() {
   const navigate = useNavigate();
   const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
     useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme3", room);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
 
@@ -119,6 +122,7 @@ export default function Enigme3() {
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }

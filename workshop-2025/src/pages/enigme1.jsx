@@ -7,11 +7,14 @@ import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 import GenesisTerminal from "../components/GenesisTerminal";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme1() {
   const navigate = useNavigate();
   const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
     useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme1", room);
   const [openedHints, setOpenedHints] = useState({});
 
   const toggleHint = (index) => {
@@ -128,6 +131,7 @@ Utilisez le terminal. Tapez help si besoin. Les commandes utiles sont : ls pour 
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }

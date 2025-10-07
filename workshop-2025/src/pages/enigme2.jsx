@@ -6,10 +6,13 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme2() {
   const navigate = useNavigate();
   const { room, players, chat, timerRemaining, sendMessage, missionStarted } = useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme2", room);
 
   useEffect(() => {
     if (!missionStarted) {
@@ -49,6 +52,7 @@ export default function Enigme2() {
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }

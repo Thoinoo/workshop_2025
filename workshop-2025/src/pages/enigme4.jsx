@@ -7,11 +7,14 @@ import BombeTimer from "../components/BombeTimer";
 import "./enigme4.css";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
+import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 
 export default function Enigme4() {
   const navigate = useNavigate();
   const { username, room, players, chat, timerRemaining, sendMessage, missionStarted } =
     useRoomState();
+  const isCompleted = useEnigmeCompletion("enigme4", room);
 
   // Drag & Drop des palettes
   useEffect(() => {
@@ -162,6 +165,7 @@ export default function Enigme4() {
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }
