@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import EnigmePresence from "../components/EnigmePresence";
 import { getEnigmesProgress, setEnigmeStatus } from "../utils/enigmesProgress";
 import socket from "../socket";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
@@ -63,6 +64,7 @@ export default function Enigme3() {
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme3" room={room} />
+          <EnigmePresence players={players} scene="enigme3" />
         </div>
         <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />

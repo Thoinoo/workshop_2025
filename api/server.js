@@ -15,7 +15,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 600);
+const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 3600);
 const AVAILABLE_TOOLS = {
   fileFixer: { id: 'fileFixer' }
 };
@@ -26,7 +26,7 @@ const buildInitialToolsState = () =>
     return acc;
   }, {});
 
-let rooms = {}; // { roomNumber: { players: [{ username, avatar }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } } } }
+let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } } } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
@@ -261,8 +261,13 @@ io.on('connection', (socket) => {
     }
     const timerValue = roomState.timer.remaining;
 
+    const existingPlayer = roomState.players.find((player) => player.username === trimmedUsername);
     roomState.players = roomState.players.filter((player) => player.username !== trimmedUsername);
-    roomState.players.push({ username: trimmedUsername, avatar: sanitizedAvatar });
+    roomState.players.push({
+      username: trimmedUsername,
+      avatar: sanitizedAvatar,
+      scene: existingPlayer?.scene ?? null
+    });
 
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
     socket.emit('chatHistory', roomState.messages);
@@ -396,9 +401,32 @@ io.on('connection', (socket) => {
       return player;
     });
     if (!updated) {
-      roomState.players.push({ username: trimmedUsername, avatar: sanitizedAvatar });
+      roomState.players.push({ username: trimmedUsername, avatar: sanitizedAvatar, scene: null });
     }
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
+  });
+
+  socket.on('playerSceneUpdate', ({ room, username, scene }) => {
+    const trimmedRoom = (room ?? '').trim();
+    const trimmedUsername = (username ?? '').trim();
+    if (!trimmedRoom || !trimmedUsername) {
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    let updated = false;
+    const normalizedScene = typeof scene === 'string' && scene.trim().length ? scene.trim() : null;
+    roomState.players = roomState.players.map((player) => {
+      if (player.username === trimmedUsername) {
+        if (player.scene !== normalizedScene) {
+          updated = true;
+          return { ...player, scene: normalizedScene };
+        }
+      }
+      return player;
+    });
+    if (updated) {
+      io.to(trimmedRoom).emit('playersUpdate', roomState.players);
+    }
   });
 
   socket.on('leaderboardEntryRecorded', ({ room, entry }) => {

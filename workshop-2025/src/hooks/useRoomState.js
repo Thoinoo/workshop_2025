@@ -67,6 +67,15 @@ export default function useRoomState() {
   const [chat, setChat] = useState([]);
   const [timerRemaining, setTimerRemaining] = useState(null);
 
+  const currentScene = useMemo(() => {
+    const pathname = location.pathname || "";
+    const enigmeMatch = pathname.match(/^\/enigme(\d+)/);
+    if (enigmeMatch) {
+      return `enigme${enigmeMatch[1]}`;
+    }
+    return null;
+  }, [location.pathname]);
+
   const persistLeaderboardEntry = useCallback((entry) => {
     if (!entry || typeof entry !== "object") {
       sessionStorage.removeItem(STORAGE_KEYS.leaderboardEntry);
@@ -123,6 +132,17 @@ export default function useRoomState() {
   }, [missionFailed]);
 
   useEffect(() => {
+    if (!room || !username) {
+      return;
+    }
+    socket.emit("playerSceneUpdate", {
+      room,
+      username,
+      scene: currentScene,
+    });
+  }, [currentScene, room, username]);
+
+  useEffect(() => {
     if (!username || !room) {
       navigate("/");
       return () => {};
@@ -134,11 +154,20 @@ export default function useRoomState() {
         return;
       }
       setPlayers(
-        updatedPlayers.map((player) =>
-          typeof player === "object" && player
-            ? { username: player.username, avatar: player.avatar ?? null }
-            : { username: String(player || ""), avatar: null }
-        )
+        updatedPlayers.map((player) => {
+          if (typeof player === "object" && player) {
+            return {
+              username: player.username,
+              avatar: player.avatar ?? null,
+              scene: player.scene ?? null,
+            };
+          }
+          return {
+            username: String(player || ""),
+            avatar: null,
+            scene: null,
+          };
+        })
       );
     };
 
@@ -513,6 +542,7 @@ export default function useRoomState() {
       recordLeaderboardEntry,
       tools: toolsState,
       useFileFixer,
+      currentScene,
     }),
     [
       allEnigmesCompleted,
@@ -537,6 +567,7 @@ export default function useRoomState() {
       avatar,
       updateAvatar,
       useFileFixer,
+      currentScene,
     ]
   );
 
