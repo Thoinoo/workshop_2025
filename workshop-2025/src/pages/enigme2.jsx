@@ -24,6 +24,8 @@ export default function Enigme2() {
   const isCompleted = useEnigmeCompletion("enigme2", room);
   const [selected, setSelected] = useState(null); // null | number | 'center'
   const [links, setLinks] = useState([]); // array of { a: id, b: id }
+  const [initialized, setInitialized] = useState(false);
+  const [hadSavedLinks, setHadSavedLinks] = useState(false);
   const containerRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hashVisible, setHashVisible] = useState(false);
@@ -119,6 +121,187 @@ export default function Enigme2() {
     });
     setSelected(null);
   };
+  
+  // Charger les liens sauvegardés pour la salle courante
+  useEffect(() => {
+    if (!room) return;
+    try {
+      const raw = localStorage.getItem(`enigme2:links:${room}`);
+      if (raw) {
+        setHadSavedLinks(true);
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          setLinks(arr.map((l) => ({ a: String(l.a), b: String(l.b) })));
+        } else {
+          setLinks([]);
+        }
+      } else {
+        setHadSavedLinks(false);
+        setLinks([]);
+      }
+    } catch (_e) {
+      setLinks([]);
+    }
+    setInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room]);
+
+  // Persister les liens quand ils changent
+  useEffect(() => {
+    if (!initialized || !room) return;
+    try {
+      localStorage.setItem(`enigme2:links:${room}`, JSON.stringify(links));
+    } catch (_e) {
+      // ignore quota errors
+    }
+  }, [links, room, initialized]);
+
+  // Lier automatiquement les ordinateurs à la database au premier démarrage (si aucune progression sauvegardée)
+  useEffect(() => {
+    if (!initialized || hadSavedLinks) return;
+    setLinks((prev) => {
+      const hasLeft = prev.some(
+        (p) => (String(p.a) === 'center' && String(p.b) === 'left') || (String(p.a) === 'left' && String(p.b) === 'center')
+      );
+      const hasRight = prev.some(
+        (p) => (String(p.a) === 'center' && String(p.b) === 'right') || (String(p.a) === 'right' && String(p.b) === 'center')
+      );
+      if (hasLeft && hasRight) return prev;
+      const next = [...prev];
+      if (!hasLeft) next.push({ a: 'center', b: 'left' });
+      if (!hasRight) next.push({ a: 'center', b: 'right' });
+      return next;
+    });
+  }, [initialized, hadSavedLinks]);
+
+  // Validation automatique:
+  //  - Tous les nœuds 1..10 doivent être dans le même composant connexe (via des liens entre nœuds uniquement)
+  //  - Aucun chemin ne doit relier un nœud à la database corrompue ('center') dans le graphe complet
+  useEffect(() => {
+    if (!room || isCompleted) return;
+
+    const NODE_IDS = new Set(nodes.map((n) => String(n.id)));
+
+    // Construit une adjacency list pour un graphe non orienté
+    const buildAdjacency = (edges) => {
+      const adj = new Map();
+      const add = (u, v) => {
+        if (!adj.has(u)) adj.set(u, new Set());
+        adj.get(u).add(v);
+      };
+      for (const e of edges) {
+        const a = String(e.a);
+        const b = String(e.b);
+        add(a, b);
+        add(b, a);
+      }
+      return adj;
+    };
+
+    // 1) Connectivité entre nœuds uniquement
+    const nodeOnlyEdges = links.filter(
+      (e) => NODE_IDS.has(String(e.a)) && NODE_IDS.has(String(e.b))
+    );
+    if (nodeOnlyEdges.length === 0) return; // pas encore de structure
+
+    const adjNodes = buildAdjacency(nodeOnlyEdges);
+    // BFS/DFS depuis un nœud présent
+    const presentNodes = new Set();
+    for (const e of nodeOnlyEdges) {
+      presentNodes.add(String(e.a));
+      presentNodes.add(String(e.b));
+    }
+    // Tous les nœuds 1..10 doivent être présents via au moins un lien pour prétendre à la connectivité
+    for (const id of NODE_IDS) {
+      if (!presentNodes.has(id)) {
+        return; // un nœud isolé => non valide
+      }
+    }
+
+    const start = presentNodes.values().next().value;
+    const visited = new Set([start]);
+    const queue = [start];
+    while (queue.length) {
+      const u = queue.shift();
+      const neigh = adjNodes.get(u) || new Set();
+      for (const v of neigh) {
+        if (!visited.has(v)) {
+          visited.add(v);
+          queue.push(v);
+        }
+      }
+    }
+    // Tous les nœuds doivent être atteints
+    for (const id of NODE_IDS) {
+      if (!visited.has(id)) {
+        return; // composant non connexe
+      }
+    }
+
+    // 2) Aucun chemin d'un nœud vers 'center' dans le graphe complet (y compris ordinateurs)
+    const fullAdj = buildAdjacency(links);
+    const reachesCenter = (sourceId) => {
+      const target = 'center';
+      const seen = new Set([sourceId]);
+      const q = [sourceId];
+      while (q.length) {
+        const u = q.shift();
+        if (u === target) return true;
+        const neigh = fullAdj.get(u) || new Set();
+        for (const v of neigh) {
+          if (!seen.has(v)) {
+            seen.add(v);
+            q.push(v);
+          }
+        }
+      }
+      return false;
+    };
+
+    // Vérifier aussi les PC
+    for (const pc of ['left', 'right']) {
+      if (reachesCenter(pc)) {
+        return; // un PC a un chemin vers la DB corrompue
+      }
+    }
+
+    for (const id of NODE_IDS) {
+      if (reachesCenter(String(id))) {
+        return; // un nœud a un chemin vers la DB corrompue
+      }
+    }
+
+    // Conditions remplies -> valider l'énigme
+    // Exigence supplementaire: les deux PC doivent etre connectes au nuage de noeuds
+    const __connectsToAnyNode = (start) => {
+      const fullAdj = new Map();
+      for (const e of links) {
+        const a = String(e.a), b = String(e.b);
+        if (!fullAdj.has(a)) fullAdj.set(a, new Set());
+        if (!fullAdj.has(b)) fullAdj.set(b, new Set());
+        fullAdj.get(a).add(b);
+        fullAdj.get(b).add(a);
+      }
+      const seen = new Set([start, 'center']);
+      const q = [start];
+      while (q.length) {
+        const u = q.shift();
+        const neigh = fullAdj.get(u) || new Set();
+        for (const v of neigh) {
+          if (seen.has(v)) continue;
+          if (new Set(nodes.map((n)=>String(n.id))).has(String(v))) return true;
+          seen.add(v);
+          q.push(v);
+        }
+      }
+      return false;
+    };
+    if (!__connectsToAnyNode('left') || !__connectsToAnyNode('right')) {
+      return;
+    }
+    setEnigmeStatus(room, "enigme2", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme2", completed: true });
+  }, [links, room, isCompleted, nodes]);
 
   return (
     <div className="game-page">
@@ -157,13 +340,16 @@ export default function Enigme2() {
           <p>
             La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
           </p>
-          <div className="puzzle-instructions" ref={containerRef}>
+          <p>
+            Règle: connectez tous les noeuds 1–10 entre eux sans relier la base corrompue ni les ordinateurs à cette base.
+          </p>
+          <div className="puzzle-instructions">
+          <div className="puzzle-instructions-enigme2" ref={containerRef}>
             {/* Lignes de liaison */}
             <svg
               className="links-overlay"
-              width={size.w}
-              height={size.h}
-              style={{ position: "absolute", inset: 0 }}
+              viewBox={`0 0 ${Math.max(1, size.w)} ${Math.max(1, size.h)}`}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
             >
               {links.map((link, idx) => {
                 const p1 = positions.get(link.a);
@@ -245,6 +431,7 @@ export default function Enigme2() {
               </div>
             ))}
           </div>
+          </div>
         </section>
         <aside className="chat-panel">
           <PlayersList players={players} />
@@ -279,7 +466,6 @@ export default function Enigme2() {
               fontSize: "0.8rem",
             }}
           >
-            5e2a9c7d1f48b3e0c6a4d8f2b1e7c9a5
           </code>
         ) : null}
       </div>

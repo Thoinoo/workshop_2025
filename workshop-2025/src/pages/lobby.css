@@ -656,7 +656,6 @@ body {
   border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   padding: 1.25rem;
-  display: flex;
   flex-direction: column;
   gap: 0.75rem;
   align-items: flex-start;
@@ -671,11 +670,8 @@ body {
 .puzzle-instructions__visual {
   margin: 0.5rem 0 0;
   border-radius: 16px;
-  overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: rgba(15, 23, 42, 0.55);
-  display: flex;
-  justify-content: center;
   padding: 0.65rem;
 }
 

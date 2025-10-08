@@ -4,7 +4,7 @@
 }
 
 .tools-menu--highlight .tools-menu__toggle {
-  animation: tools-menu-pulse 1.2s ease-in-out infinite alternate;
+  animation: tools-menu-pulse s ease-in-out infinite alternate;
   box-shadow: 0 0 1.5rem rgba(0, 255, 209, 0.45);
   border-color: rgba(0, 255, 209, 0.65);
 }
@@ -24,8 +24,18 @@
   position: relative;
   z-index: 2;
   border: #ffffff;
-  transform: scale(0.5);
-  
+  transform: scale(1);
+}
+
+/* Variante locale de .game-secondary pour le bouton ToolsMenu, avec padding réduit */
+.tools-menu .tools-menu__toggle.game-secondary {
+  border-radius: 999px;
+  padding: 3px; /* réduit par rapport au global */
+  font-size: 1px;
+  background-color: #ffffff00;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0s ease, background-color 0s ease;
 }
 
 .tools-menu__panel {
@@ -119,7 +129,7 @@
 
 .tools-menu__illustration {
   width: 100%;
-  max-height: 120px;
+  max-height: 60px;
   object-fit: cover;
   /* border-radius: 0.6rem; */
   border-radius: 14.6rem;

@@ -1,4 +1,4 @@
-.puzzle-instructions {
+.puzzle-instructions-enigme2 {
   position: relative;
   height: 400px;
   display: flex;
@@ -12,7 +12,6 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 2; /* au-dessus des liens */
 }
 
 .database-error img {
@@ -43,7 +42,6 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 2; /* au-dessus des liens */
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -59,7 +57,7 @@
 }
 
 .node:hover {
-  transform: scale(1.04);
+  /* Ne pas overrider transform de positionnement; renforcer seulement l'ombre */
   box-shadow: 0 16px 32px rgba(59, 130, 246, 0.4);
 }
 
@@ -73,7 +71,6 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2; /* au-dessus des liens */
   width: 80px;
   height: auto;
   border-radius: 16px;
@@ -86,11 +83,4 @@
 
 .computer.selected {
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.9), 0 12px 24px rgba(15, 23, 42, 0.35);
-}
-
-/* Calque des liens (en dessous des noeuds/DB) */
-.links-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
 }
