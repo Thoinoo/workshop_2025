@@ -20,6 +20,7 @@ export default function Enigme3() {
   const isCompleted = useEnigmeCompletion("enigme3", room);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
+  const [hashVisible, setHashVisible] = useState(false);
   const handleDebugComplete = () => {
     if (!room || isCompleted) {
       return;
@@ -149,6 +150,38 @@ export default function Enigme3() {
           <PlayersList players={players} />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
+      </div>
+      <div className="hash-reveal">
+        <button
+          type="button"
+          className="hash-reveal__toggle"
+          onClick={() => setHashVisible((prev) => !prev)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#6b7280",
+            fontSize: "0.85rem",
+            cursor: "pointer",
+            textDecoration: "underline",
+            padding: 0,
+            marginTop: "1rem",
+          }}
+        >
+          {hashVisible ? "Masquer le hash" : "Afficher le hash"}
+        </button>
+        {hashVisible ? (
+          <code
+            className="hash-reveal__value"
+            style={{
+              display: "block",
+              marginTop: "0.25rem",
+              color: "#4b5563",
+              fontSize: "0.8rem",
+            }}
+          >
+            c1f3a5d7e9b2c4a6d8f0e1b3a7c9d5f2
+          </code>
+        ) : null}
       </div>
       <PuzzleSuccessBanner visible={isCompleted} />
     </div>
