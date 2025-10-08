@@ -22,8 +22,16 @@ export default function Enigme4() {
 
   const [foundKeys, setFoundKeys] = useState([]);
   const [wrongCells, setWrongCells] = useState([]);
+  const [lastSelection, setLastSelection] = useState(null);
   const [clickedCell, setClickedCell] = useState(null);
-  const keyPositions = ["A2", "C3", "D1"];
+
+  // ✅ Bouton debug pour valider l'énigme
+  const handleDebugComplete = () => {
+    if (!room || isCompleted) return;
+    setEnigmeStatus(room, "enigme4", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+    socket.emit("stopTimer", { room });
+  };
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -37,44 +45,60 @@ export default function Enigme4() {
     }
   }, [location.pathname, missionFailed, navigate]);
 
+  useEffect(() => {
+    if (!room) {
+      setFoundKeys([]);
+      setWrongCells([]);
+      setLastSelection(null);
+      return () => {};
+    }
+
+    let canceled = false;
+
+    const applySharedState = (payload = {}) => {
+      if (canceled) {
+        return;
+      }
+
+      const nextFound = Array.isArray(payload.foundKeys) ? payload.foundKeys : [];
+      const nextWrong = Array.isArray(payload.wrongCells) ? payload.wrongCells : [];
+
+      setFoundKeys(nextFound);
+      setWrongCells(nextWrong);
+      setLastSelection(payload.lastSelection ?? null);
+
+      if (typeof payload.completed === "boolean") {
+        setEnigmeStatus(room, "enigme4", payload.completed);
+      }
+    };
+
+    socket.on("enigme4:state", applySharedState);
+    socket.emit("enigme4:requestState", { room }, (initialState) => {
+      applySharedState(initialState || {});
+    });
+
+    return () => {
+      canceled = true;
+      socket.off("enigme4:state", applySharedState);
+    };
+  }, [room]);
+
+  useEffect(() => {
+    if (!lastSelection || !lastSelection.cell) {
+      return;
+    }
+
+    setClickedCell(lastSelection.cell);
+    const timeoutId = setTimeout(() => setClickedCell(null), 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [lastSelection]);
+
   const handleCellClick = (pos) => {
     if (!missionStarted || isCompleted || !room) return;
     if (foundKeys.includes(pos) || wrongCells.includes(pos)) return;
-
-    setClickedCell(pos);
-
-    if (keyPositions.includes(pos)) {
-      setFoundKeys((prev) => [...prev, pos]);
-
-      if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
-        // ✅ Marquer comme terminée
-        setEnigmeStatus(room, "enigme4", true);
-        socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-
-        // 🕒 Stopper le timer pour tout le monde
-        socket.emit("stopTimer", { room });
-      }
-    } else {
-      setWrongCells((prev) => [...prev, pos]);
-      const factor = (wrongCells.length + 1) * 2;
-      socket.emit("accelerateTimer", { room, factor });
-      socket.emit("chatMessage", {
-        room,
-        username: "SYSTEM",
-        message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`,
-      });
-    }
-
-    setTimeout(() => setClickedCell(null), 300);
+    socket.emit("enigme4:selectCell", { room, cell: pos });
   };
-
-  useEffect(() => {
-    if (foundKeys.length === keyPositions.length && !isCompleted) {
-      setEnigmeStatus(room, "enigme4", true);
-      socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-      socket.emit("stopTimer", { room }); // stop du timer
-    }
-  }, [foundKeys, isCompleted, room]);
 
   const letters = ["A", "B", "C", "D"];
   const numbers = [1, 2, 3, 4];
@@ -98,6 +122,48 @@ export default function Enigme4() {
         </div>
       </header>
 
+{/* Bouton debug */}
+          {!isCompleted && (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l'énigme (debug)
+            </button>
+          )}
+
+          {isCompleted ? (
+  <article className="enigme-post-completion">
+    <header className="enigme-post-completion__header">
+      <h3>Bravo !!</h3>
+      <h3>Opération Genesis Key</h3>
+      <p className="enigme-post-completion__subtitle">
+        Quatrième bloc du reseau Bitcoin - manifeste technique et politique.
+      </p>
+    </header>
+
+    <div className="enigme-post-completion__grid">
+      <section>
+        <h4>Distribution</h4>
+        <p>
+          En 2010, le premier wallet Bitcoin public fut distribué pour tester les transactions entre utilisateurs.
+        </p>
+      </section>
+      <section>
+        <h4>Sécurité</h4>
+        <p>
+          L'introduction des clés privées multiples pour sécuriser les wallets contre le vol fut instaurée en 2011.
+         
+          
+        </p>
+      </section>
+      <section>
+        <h4>Hiérarchie</h4>
+        <p>
+          En 2013, le développement des wallets HD (Hierarchical Deterministic) a été créé, ce qui a permis la génération de multiples clés à partir d’une seule seed.
+        </p>
+      </section>
+    </div>
+  </article>
+) : null}
+
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 4</h2>
@@ -105,7 +171,7 @@ export default function Enigme4() {
             Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
             Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />
             <strong>[ATTENTION]</strong> Cliquer sur une mauvaise case augmente la vitesse de
-            réduction de BTC. Comme quoi une erreur est vite arrivée...
+            réduction de BTC.
           </p>
 
           <div className="puzzle-grid">

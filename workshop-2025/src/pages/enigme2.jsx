@@ -27,6 +27,7 @@ export default function Enigme2() {
   const [initialized, setInitialized] = useState(false);
   const containerRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [hashVisible, setHashVisible] = useState(false);
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -300,6 +301,38 @@ export default function Enigme2() {
           <PlayersList players={players} />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
+      </div>
+      <div className="hash-reveal">
+        <button
+          type="button"
+          className="hash-reveal__toggle"
+          onClick={() => setHashVisible((prev) => !prev)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#6b7280",
+            fontSize: "0.85rem",
+            cursor: "pointer",
+            textDecoration: "underline",
+            padding: 0,
+            marginTop: "1rem",
+          }}
+        >
+          {hashVisible ? "Masquer le hash" : "Afficher le hash"}
+        </button>
+        {hashVisible ? (
+          <code
+            className="hash-reveal__value"
+            style={{
+              display: "block",
+              marginTop: "0.25rem",
+              color: "#4b5563",
+              fontSize: "0.8rem",
+            }}
+          >
+            5e2a9c7d1f48b3e0c6a4d8f2b1e7c9a5
+          </code>
+        ) : null}
       </div>
       <PuzzleSuccessBanner visible={isCompleted} />
     </div>

@@ -17,7 +17,8 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 3600);
 const AVAILABLE_TOOLS = {
-  fileFixer: { id: 'fileFixer' }
+  fileFixer: { id: 'fileFixer' },
+  hashTranslator: { id: 'hashTranslator' }
 };
 
 const buildInitialToolsState = () =>
@@ -27,6 +28,27 @@ const buildInitialToolsState = () =>
   }, {});
 
 const TERMINAL_HISTORY_LIMIT = 200;
+const ENIGME4_KEYS = ['A2', 'C3', 'D1'];
+const ENIGME3_WALLETS = ['Wallet A', 'Wallet B', 'Wallet C'];
+const ENIGME3_KEYS = ['Key1', 'Key2', 'Key3'];
+const ENIGME3_MAPPING = {
+  'Wallet A': 'Key1',
+  'Wallet B': 'Key2',
+  'Wallet C': 'Key3'
+};
+
+const buildInitialEnigme4State = () => ({
+  foundKeys: [],
+  wrongCells: [],
+  lastSelection: null,
+  completed: false
+});
+
+const buildInitialEnigme3State = () => ({
+  selections: {},
+  feedback: {},
+  completed: false
+});
 
 let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene, terminalRole }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } }, terminalRoles: { [username]: 'operator'|'observer' }, terminal: { sharedInput: string, history: Array<{ command: string, outputs: string[] }> } } }
 
@@ -37,6 +59,8 @@ const ensureRoom = (roomName) => {
       messages: [],
       timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
       enigmes: {},
+      enigme3: buildInitialEnigme3State(),
+      enigme4: buildInitialEnigme4State(),
       startedAt: null,
       missionSummary: null,
       missionFailed: false,
@@ -51,6 +75,14 @@ const ensureRoom = (roomName) => {
 
   if (!rooms[roomName].tools) {
     rooms[roomName].tools = buildInitialToolsState();
+  }
+
+  if (!rooms[roomName].enigme3) {
+    rooms[roomName].enigme3 = buildInitialEnigme3State();
+  }
+
+  if (!rooms[roomName].enigme4) {
+    rooms[roomName].enigme4 = buildInitialEnigme4State();
   }
 
   return rooms[roomName];
@@ -183,12 +215,96 @@ const assignToolsForRoom = (roomName) => {
   emitToolsUpdate(roomName);
 };
 
+const getEnigme3State = (roomState) => {
+  if (!roomState) {
+    return buildInitialEnigme3State();
+  }
+  if (!roomState.enigme3 || typeof roomState.enigme3 !== 'object') {
+    roomState.enigme3 = buildInitialEnigme3State();
+  }
+  return roomState.enigme3;
+};
+
+const resetEnigme3State = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.enigme3 = buildInitialEnigme3State();
+};
+
+const emitEnigme3State = (roomName, { targetSocket = null } = {}) => {
+  const roomState = ensureRoom(roomName);
+  const enigme3State = getEnigme3State(roomState);
+  const payload = {
+    selections: { ...enigme3State.selections },
+    feedback: { ...enigme3State.feedback },
+    completed: Boolean(enigme3State.completed)
+  };
+  if (targetSocket) {
+    targetSocket.emit('enigme3:state', payload);
+  } else {
+    io.to(roomName).emit('enigme3:state', payload);
+  }
+};
+
+const getEnigme4State = (roomState) => {
+  if (!roomState) {
+    return buildInitialEnigme4State();
+  }
+  if (!roomState.enigme4 || typeof roomState.enigme4 !== 'object') {
+    roomState.enigme4 = buildInitialEnigme4State();
+  }
+  return roomState.enigme4;
+};
+
+const resetEnigme4State = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.enigme4 = buildInitialEnigme4State();
+};
+
+const emitEnigme4State = (roomName, { targetSocket = null } = {}) => {
+  const roomState = ensureRoom(roomName);
+  const enigme4State = getEnigme4State(roomState);
+  const payload = {
+    foundKeys: [...enigme4State.foundKeys],
+    wrongCells: [...enigme4State.wrongCells],
+    lastSelection: enigme4State.lastSelection ? { ...enigme4State.lastSelection } : null,
+    completed: Boolean(enigme4State.completed)
+  };
+  if (targetSocket) {
+    targetSocket.emit('enigme4:state', payload);
+  } else {
+    io.to(roomName).emit('enigme4:state', payload);
+  }
+};
+
+const appendSystemMessage = (roomName, message) => {
+  const sanitizedMessage = typeof message === 'string' ? message : '';
+  if (!sanitizedMessage.trim()) {
+    return;
+  }
+  const roomState = ensureRoom(roomName);
+  const entry = { username: 'SYSTEM', message: sanitizedMessage };
+  roomState.messages.push(entry);
+  io.to(roomName).emit('newMessage', entry);
+};
+
 const updateEnigmeStatusForRoom = (roomName, key, completed) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
   if (!normalizedKey) {
     return;
   }
   const roomState = ensureRoom(roomName);
+  if (normalizedKey === 'enigme3') {
+    const enigme3State = getEnigme3State(roomState);
+    enigme3State.completed = Boolean(completed);
+  }
+  if (normalizedKey === 'enigme4') {
+    const enigme4State = getEnigme4State(roomState);
+    enigme4State.completed = Boolean(completed);
+  }
   roomState.enigmes[normalizedKey] = Boolean(completed);
   const enigmeStatuses = Object.values(roomState.enigmes);
   const allSolved = enigmeStatuses.length > 0 && enigmeStatuses.every(Boolean);
@@ -257,6 +373,20 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
 
   io.to(roomName).emit("timerUpdate", room.timer.remaining);
   return room.timer.remaining;
+};
+
+const setTimerSpeedForRoom = (roomName, factor) => {
+  const roomState = ensureRoom(roomName);
+  if (!roomState?.timer) {
+    return;
+  }
+
+  const speedFactor = Number.isFinite(Number(factor)) ? Math.max(1, Number(factor)) : 1;
+  roomState.timer.speedMultiplier = speedFactor;
+
+  if (!roomState.timer.started) {
+    startTimerForRoom(roomName, { reset: true });
+  }
 };
 
 
@@ -373,6 +503,8 @@ io.on('connection', (socket) => {
       sharedInput: roomState.terminal?.sharedInput ?? '',
       history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
     });
+    emitEnigme3State(trimmedRoom, { targetSocket: socket });
+    emitEnigme4State(trimmedRoom, { targetSocket: socket });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
     }
@@ -403,6 +535,180 @@ io.on('connection', (socket) => {
     io.to(room).emit('newMessage', msg);
   });
 
+  socket.on('enigme3:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({ selections: {}, feedback: {}, completed: false });
+      }
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    const snapshot = {
+      selections: { ...enigme3State.selections },
+      feedback: { ...enigme3State.feedback },
+      completed: Boolean(enigme3State.completed)
+    };
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      emitEnigme3State(trimmedRoom, { targetSocket: socket });
+    }
+  });
+
+  socket.on('enigme3:assignKey', ({ room, wallet, key } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedWallet = typeof wallet === 'string' ? wallet.trim() : '';
+    const normalizedKey = typeof key === 'string' ? key.trim() : '';
+    const username = (socket.data?.username ?? '').trim();
+
+    if (!trimmedRoom || !normalizedWallet || !normalizedKey || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+    if (!ENIGME3_WALLETS.includes(normalizedWallet) || !ENIGME3_KEYS.includes(normalizedKey)) {
+      callback({ ok: false, error: 'invalid_target' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    if (enigme3State.completed) {
+      callback({ ok: false, error: 'completed' });
+      return;
+    }
+
+    Object.keys(enigme3State.selections || {}).forEach((walletName) => {
+      if (enigme3State.selections[walletName] === normalizedKey && walletName !== normalizedWallet) {
+        delete enigme3State.selections[walletName];
+        delete enigme3State.feedback[walletName];
+      }
+    });
+
+    enigme3State.selections[normalizedWallet] = normalizedKey;
+    delete enigme3State.feedback[normalizedWallet];
+    emitEnigme3State(trimmedRoom);
+
+    callback({ ok: true });
+  });
+
+  socket.on('enigme3:validate', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    const selections = enigme3State.selections || {};
+    const feedback = {};
+    let allCorrect = true;
+
+    ENIGME3_WALLETS.forEach((walletName) => {
+      const assigned = selections[walletName] || null;
+      if (assigned && ENIGME3_MAPPING[walletName] === assigned) {
+        feedback[walletName] = 'correct';
+      } else {
+        feedback[walletName] = assigned ? 'incorrect' : 'missing';
+        allCorrect = false;
+      }
+    });
+
+    enigme3State.feedback = feedback;
+    if (allCorrect) {
+      enigme3State.completed = true;
+      updateEnigmeStatusForRoom(trimmedRoom, 'enigme3', true);
+    } else {
+      enigme3State.completed = false;
+    }
+
+    emitEnigme3State(trimmedRoom);
+    callback({ ok: true, completed: enigme3State.completed });
+  });
+
+  socket.on('enigme4:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({
+          foundKeys: [],
+          wrongCells: [],
+          lastSelection: null,
+          completed: false
+        });
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const state = getEnigme4State(roomState);
+    const snapshot = {
+      foundKeys: [...state.foundKeys],
+      wrongCells: [...state.wrongCells],
+      lastSelection: state.lastSelection ? { ...state.lastSelection } : null,
+      completed: Boolean(state.completed)
+    };
+
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+    }
+  });
+
+  socket.on('enigme4:selectCell', ({ room, cell } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedCell =
+      typeof cell === 'string' && cell.trim().length ? cell.trim().toUpperCase() : '';
+
+    if (!trimmedRoom || !normalizedCell) {
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme4State = getEnigme4State(roomState);
+
+    if (enigme4State.completed) {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    if (
+      enigme4State.foundKeys.includes(normalizedCell) ||
+      enigme4State.wrongCells.includes(normalizedCell)
+    ) {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    const timestamp = Date.now();
+    const isKey = ENIGME4_KEYS.includes(normalizedCell);
+
+    if (isKey) {
+      enigme4State.foundKeys.push(normalizedCell);
+      enigme4State.lastSelection = { cell: normalizedCell, type: 'key', ts: timestamp };
+
+      if (enigme4State.foundKeys.length >= ENIGME4_KEYS.length) {
+        enigme4State.completed = true;
+        updateEnigmeStatusForRoom(trimmedRoom, 'enigme4', true);
+      }
+    } else {
+      enigme4State.wrongCells.push(normalizedCell);
+      enigme4State.lastSelection = { cell: normalizedCell, type: 'wrong', ts: timestamp };
+
+      const factor = enigme4State.wrongCells.length * 2;
+      setTimerSpeedForRoom(trimmedRoom, factor);
+      appendSystemMessage(
+        trimmedRoom,
+        `Alerte: Mauvaise case (${normalizedCell}) - vitesse x${factor}`
+      );
+    }
+
+    emitEnigme4State(trimmedRoom);
+  });
+
   socket.on('startMission', ({ room }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -415,8 +721,12 @@ io.on('connection', (socket) => {
     assignToolsForRoom(trimmedRoom);
     assignTerminalRolesForRoom(roomState);
     resetTerminalState(roomState);
+    resetEnigme3State(roomState);
+    resetEnigme4State(roomState);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme3State(trimmedRoom);
+    emitEnigme4State(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
@@ -441,12 +751,16 @@ io.on('connection', (socket) => {
       terminalRole: null
     }));
     resetTerminalState(roomState);
+    resetEnigme3State(roomState);
+    resetEnigme4State(roomState);
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
     emitToolsUpdate(trimmedRoom);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme3State(trimmedRoom);
+    emitEnigme4State(trimmedRoom);
   });
 
   socket.on('terminal:requestState', ({ room } = {}, callback = () => {}) => {
@@ -616,6 +930,41 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('tool:hashTranslator:translate', ({ room, hash } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const toolState = roomState.tools.hashTranslator;
+    if (!toolState) {
+      callback({ ok: false, error: 'unknown_tool' });
+      return;
+    }
+    if (!toolState.holder) {
+      callback({ ok: false, error: 'unassigned' });
+      return;
+    }
+    if (toolState.holder !== username) {
+      callback({ ok: false, error: 'not_holder', holder: toolState.holder });
+      return;
+    }
+
+    const normalizedHash = typeof hash === 'string' ? hash.trim().toLowerCase() : '';
+    const knownTranslation = normalizedHash ? HASH_TRANSLATIONS[normalizedHash] : null;
+    const translation = knownTranslation || pickRandomHashCell();
+
+    callback({
+      ok: true,
+      translation,
+      known: Boolean(knownTranslation),
+      hash: normalizedHash
+    });
+  });
+
   socket.on('enigmeStatusUpdate', ({ room, key, completed }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -678,19 +1027,16 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('leaderboardEntryRecorded', entry ?? null);
   });
 
-socket.on("accelerateTimer", ({ room, factor } = {}) => {
-  const roomState = rooms[room];
-  if (!roomState || !roomState.timer) return;
+  socket.on('accelerateTimer', ({ room, factor } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
 
-  const speedFactor = Number(factor) || 1;
-  roomState.timer.speedMultiplier = speedFactor;
+    const speedFactor = Number.isFinite(Number(factor)) ? Math.max(1, Number(factor)) : 1;
+    setTimerSpeedForRoom(trimmedRoom, speedFactor);
 
-  console.log(`Timer for room "${room}" accelerated x${speedFactor}`);
-
-  // Si le timer n'est pas encore lancé, le démarrer
-  if (!roomState.timer.started) {
-    startTimerForRoom(room, { reset: true });
-  }
+    console.log(`Timer for room "${trimmedRoom}" accelerated x${speedFactor}`);
 });
 
   socket.on('disconnect', () => {
@@ -727,3 +1073,19 @@ app.post('/api/leaderboard', (req, res) => {
 
 server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
 
+
+const HASH_TRANSLATIONS = {
+  '892c1b5b4f90a2d7e8c3a1f5d4b6e7f1': 'A2',
+  '5e2a9c7d1f48b3e0c6a4d8f2b1e7c9a5': 'C3',
+  'c1f3a5d7e9b2c4a6d8f0e1b3a7c9d5f2': 'D1'
+};
+const HASH_TRANSLATOR_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const HASH_TRANSLATOR_NUMBERS = ['1', '2', '3', '4', '5', '6'];
+
+const pickRandomHashCell = () => {
+  const letter =
+    HASH_TRANSLATOR_LETTERS[Math.floor(Math.random() * HASH_TRANSLATOR_LETTERS.length)];
+  const number =
+    HASH_TRANSLATOR_NUMBERS[Math.floor(Math.random() * HASH_TRANSLATOR_NUMBERS.length)];
+  return `${letter}${number}`;
+};

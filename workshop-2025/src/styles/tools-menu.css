@@ -159,15 +159,48 @@
   border: 1px solid rgba(0, 255, 209, 0.18);
 }
 
+.tools-menu__tool-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
 .tools-menu__tool-header h4 {
   margin: 0;
   font-size: 1rem;
+  flex: 1 1 auto;
+}
+
+.tools-menu__collapse {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(4, 10, 16, 0.75);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tools-menu__collapse:hover,
+.tools-menu__collapse:focus-visible {
+  background: rgba(0, 255, 209, 0.18);
+  border-color: rgba(0, 255, 209, 0.35);
+  outline: none;
 }
 
 .tools-menu__description {
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.75);
+}
+
+.tools-menu__tool-body {
+  margin-top: 0.65rem;
+}
+
+.tools-menu__tool--collapsed .tools-menu__tool-body {
+  display: none;
 }
 
 .tools-menu__ownership {

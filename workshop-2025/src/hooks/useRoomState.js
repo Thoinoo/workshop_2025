@@ -408,6 +408,25 @@ export default function useRoomState() {
     [room]
   );
 
+  const useHashTranslator = useCallback(
+    (hashValue) =>
+      new Promise((resolve) => {
+        if (!room) {
+          resolve({ ok: false, error: "missing_room" });
+          return;
+        }
+
+        socket.emit(
+          "tool:hashTranslator:translate",
+          { room, hash: typeof hashValue === "string" ? hashValue : "" },
+          (response = {}) => {
+            resolve(response);
+          }
+        );
+      }),
+    [room]
+  );
+
   const recordLeaderboardEntry = useCallback(
     (entry, { broadcast = false } = {}) => {
       if (!entry || typeof entry !== "object") {
@@ -544,6 +563,7 @@ export default function useRoomState() {
       recordLeaderboardEntry,
       tools: toolsState,
       useFileFixer,
+      useHashTranslator,
       currentScene,
     }),
     [
@@ -569,6 +589,7 @@ export default function useRoomState() {
       avatar,
       updateAvatar,
       useFileFixer,
+      useHashTranslator,
       currentScene,
     ]
   );

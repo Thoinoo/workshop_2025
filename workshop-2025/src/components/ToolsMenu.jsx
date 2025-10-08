@@ -30,11 +30,15 @@ const removeKey = (object, key) => {
 };
 
 export default function ToolsMenu() {
-  const { username, tools, useFileFixer, missionStarted } = useRoomState();
+  const { username, tools, useFileFixer, useHashTranslator, missionStarted } = useRoomState();
   const [isOpen, setIsOpen] = useState(false);
   const [toolFeedback, setToolFeedback] = useState({});
   const [pendingUse, setPendingUse] = useState({});
   const [fileFixerInput, setFileFixerInput] = useState("");
+  const [hashTranslatorInput, setHashTranslatorInput] = useState("");
+  const [collapsedTools, setCollapsedTools] = useState(
+    () => new Set(TOOL_LIST.map((tool) => tool.id))
+  );
   const TUTORIAL_STORAGE_KEY = "toolsTutorialDismissedMission";
   const [dismissedMissionId, setDismissedMissionId] = useState(() => {
     if (typeof window === "undefined") {
@@ -56,6 +60,29 @@ export default function ToolsMenu() {
   );
   const fileFixerFeedback = toolFeedback[TOOL_IDS.FILE_FIXER];
   const fileFixerPending = Boolean(pendingUse[TOOL_IDS.FILE_FIXER]);
+
+  const hashTranslatorHolder = toolStates[TOOL_IDS.HASH_TRANSLATOR]?.holder ?? null;
+  const isHashTranslatorHolder = Boolean(
+    username && hashTranslatorHolder && username === hashTranslatorHolder
+  );
+  const isToolCollapsed = useCallback(
+    (toolId) => collapsedTools.has(toolId),
+    [collapsedTools]
+  );
+
+  const toggleToolCollapsed = useCallback((toolId) => {
+    setCollapsedTools((prev) => {
+      const next = new Set(prev);
+      if (next.has(toolId)) {
+        next.delete(toolId);
+      } else {
+        next.add(toolId);
+      }
+      return next;
+    });
+  }, []);
+  const hashTranslatorFeedback = toolFeedback[TOOL_IDS.HASH_TRANSLATOR];
+  const hashTranslatorPending = Boolean(pendingUse[TOOL_IDS.HASH_TRANSLATOR]);
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
@@ -110,6 +137,14 @@ export default function ToolsMenu() {
   }, [isFileFixerHolder]);
 
   useEffect(() => {
+    if (isHashTranslatorHolder) {
+      return;
+    }
+    setHashTranslatorInput("");
+    setToolFeedback((prev) => removeKey(prev, TOOL_IDS.HASH_TRANSLATOR));
+  }, [isHashTranslatorHolder]);
+
+  useEffect(() => {
     if (!missionStarted) {
       setShowTutorial(false);
       return;
@@ -159,6 +194,42 @@ export default function ToolsMenu() {
     setToolFeedback((prev) => ({
       ...prev,
       [TOOL_IDS.FILE_FIXER]: feedback,
+    }));
+  };
+
+  const handleHashTranslatorSubmit = async (event) => {
+    event.preventDefault();
+    if (!isHashTranslatorHolder || hashTranslatorPending) {
+      return;
+    }
+    const trimmed = hashTranslatorInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setPendingUse((prev) => ({ ...prev, [TOOL_IDS.HASH_TRANSLATOR]: true }));
+    const response = await useHashTranslator(trimmed);
+    setPendingUse((prev) => ({ ...prev, [TOOL_IDS.HASH_TRANSLATOR]: false }));
+
+    if (!response?.ok) {
+      const message = formatToolUseError(response?.error, response?.holder);
+      setToolFeedback((prev) => ({
+        ...prev,
+        [TOOL_IDS.HASH_TRANSLATOR]: {
+          message: message || "Action impossible.",
+          success: false,
+        },
+      }));
+      return;
+    }
+
+    setToolFeedback((prev) => ({
+      ...prev,
+      [TOOL_IDS.HASH_TRANSLATOR]: {
+        success: true,
+        translation: response.translation,
+        known: Boolean(response.known),
+      },
     }));
   };
 
@@ -227,10 +298,77 @@ export default function ToolsMenu() {
     );
   };
 
-  const renderToolSection = (tool) => {
+  const renderHashTranslator = () => {
+    if (!hashTranslatorHolder) {
+      return (
+        <p className="tools-menu__ownership">
+          Outil en attente d attribution par le QG.
+        </p>
+      );
+    }
+
+    if (!isHashTranslatorHolder) {
+      return (
+        <p className="tools-menu__ownership">
+          Outil attribue a {hashTranslatorHolder}.
+        </p>
+      );
+    }
+
+    return (
+      <form className="tools-menu__form" onSubmit={handleHashTranslatorSubmit}>
+        <p className="tools-menu__ownership">Vous detenez Hash Translator.</p>
+        <label className="tools-menu__label">
+          Hash a traduire
+          <input
+            type="text"
+            className="tools-menu__textarea"
+            placeholder="Collez le hash a dechiffrer"
+            value={hashTranslatorInput}
+            onChange={(event) => setHashTranslatorInput(event.target.value)}
+          />
+        </label>
+        <div className="tools-menu__actions">
+          <button
+            type="submit"
+            className="game-primary"
+            disabled={hashTranslatorPending || !hashTranslatorInput.trim()}
+          >
+            Traduire
+          </button>
+        </div>
+        {hashTranslatorFeedback ? (
+          hashTranslatorFeedback.success ? (
+            <div className="tools-menu__feedback is-success">
+              <p>
+                Case cible :{" "}
+                <strong>{hashTranslatorFeedback.translation || "??"}</strong>
+              </p>
+              <p className="tools-menu__feedback-note">
+                {hashTranslatorFeedback.known
+                  ? "Hash reconnu par le QG."
+                  : "Hash inconnu : proposition calculee par l IA."}
+              </p>
+            </div>
+          ) : (
+            <div className="tools-menu__feedback is-error">
+              <p>{hashTranslatorFeedback.message || "Action impossible pour le moment."}</p>
+            </div>
+          )
+        ) : null}
+      </form>
+    );
+  };
+
+  const renderToolSection = (tool, { collapsed }) => {
+    if (collapsed) {
+      return null;
+    }
     switch (tool.id) {
       case TOOL_IDS.FILE_FIXER:
         return renderFileFixer();
+      case TOOL_IDS.HASH_TRANSLATOR:
+        return renderHashTranslator();
       default:
         return (
           <p className="tools-menu__placeholder">
@@ -281,12 +419,32 @@ export default function ToolsMenu() {
         </header>
         <div className="tools-menu__content">
           {TOOL_LIST.map((tool) => (
-            <section key={tool.id} className="tools-menu__tool">
+            <section
+              key={tool.id}
+              className={`tools-menu__tool ${
+                isToolCollapsed(tool.id) ? "tools-menu__tool--collapsed" : ""
+              }`}
+            >
               <header className="tools-menu__tool-header">
                 <h4>{tool.name}</h4>
                 <p className="tools-menu__description">{tool.description}</p>
+                <button
+                  type="button"
+                  className="tools-menu__collapse"
+                  onClick={() => toggleToolCollapsed(tool.id)}
+                  aria-expanded={isToolCollapsed(tool.id) ? "false" : "true"}
+                  aria-controls={`tool-panel-${tool.id}`}
+                >
+                  {isToolCollapsed(tool.id) ? "Afficher" : "Masquer"}
+                </button>
               </header>
-              {renderToolSection(tool)}
+              <div
+                id={`tool-panel-${tool.id}`}
+                className="tools-menu__tool-body"
+                aria-hidden={isToolCollapsed(tool.id) ? "true" : "false"}
+              >
+                {renderToolSection(tool, { collapsed: isToolCollapsed(tool.id) })}
+              </div>
             </section>
           ))}
         </div>
