@@ -17,7 +17,8 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const ROOM_DURATION_SECONDS = Number(process.env.ROOM_DURATION_SECONDS || 3600);
 const AVAILABLE_TOOLS = {
-  fileFixer: { id: 'fileFixer' }
+  fileFixer: { id: 'fileFixer' },
+  hashTranslator: { id: 'hashTranslator' }
 };
 
 const buildInitialToolsState = () =>
@@ -777,6 +778,41 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('tool:hashTranslator:translate', ({ room, hash } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const toolState = roomState.tools.hashTranslator;
+    if (!toolState) {
+      callback({ ok: false, error: 'unknown_tool' });
+      return;
+    }
+    if (!toolState.holder) {
+      callback({ ok: false, error: 'unassigned' });
+      return;
+    }
+    if (toolState.holder !== username) {
+      callback({ ok: false, error: 'not_holder', holder: toolState.holder });
+      return;
+    }
+
+    const normalizedHash = typeof hash === 'string' ? hash.trim().toLowerCase() : '';
+    const knownTranslation = normalizedHash ? HASH_TRANSLATIONS[normalizedHash] : null;
+    const translation = knownTranslation || pickRandomHashCell();
+
+    callback({
+      ok: true,
+      translation,
+      known: Boolean(knownTranslation),
+      hash: normalizedHash
+    });
+  });
+
   socket.on('enigmeStatusUpdate', ({ room, key, completed }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -886,3 +922,18 @@ app.post('/api/leaderboard', (req, res) => {
 server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
 
 
+const HASH_TRANSLATIONS = {
+  '892c1b5b4f90a2d7e8c3a1f5d4b6e7f1': 'A2',
+  '5e2a9c7d1f48b3e0c6a4d8f2b1e7c9a5': 'C3',
+  'c1f3a5d7e9b2c4a6d8f0e1b3a7c9d5f2': 'D1'
+};
+const HASH_TRANSLATOR_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const HASH_TRANSLATOR_NUMBERS = ['1', '2', '3', '4', '5', '6'];
+
+const pickRandomHashCell = () => {
+  const letter =
+    HASH_TRANSLATOR_LETTERS[Math.floor(Math.random() * HASH_TRANSLATOR_LETTERS.length)];
+  const number =
+    HASH_TRANSLATOR_NUMBERS[Math.floor(Math.random() * HASH_TRANSLATOR_NUMBERS.length)];
+  return `${letter}${number}`;
+};
