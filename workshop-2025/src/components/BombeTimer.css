@@ -83,6 +83,11 @@
   z-index: 1;
 }
 
+.bombe__display--highlight {
+  animation: bombe-highlight-pulse 1.2s ease-in-out infinite alternate;
+  box-shadow: 0 0 1.8rem rgba(56, 189, 248, 0.45);
+}
+
 .bombe__label {
   font-size: 0.62rem;
   font-weight: 600;
@@ -98,6 +103,67 @@
   letter-spacing: 0.18em;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+}
+
+.bombe__tutorial {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -105%);
+  width: min(18rem, 65vw);
+  padding: 0.75rem 0.9rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(22, 33, 56, 0.92));
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 0.75rem;
+  box-shadow: 0 1.5rem 2.5rem rgba(15, 23, 42, 0.45);
+  color: #e2e8f0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 3;
+}
+
+.bombe__tutorial::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -0.75rem;
+  transform: translateX(-50%);
+  border-left: 0.65rem solid transparent;
+  border-right: 0.65rem solid transparent;
+  border-top: 0.85rem solid rgba(56, 189, 248, 0.45);
+  filter: drop-shadow(0 0.25rem 0.35rem rgba(15, 23, 42, 0.5));
+}
+
+.bombe__tutorial p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.bombe__tutorial-close {
+  align-self: flex-end;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.bombe__tutorial-close:hover,
+.bombe__tutorial-close:focus-visible {
+  background: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  outline: none;
+}
+
+.bombe__tutorial-close:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.65);
+  outline-offset: 2px;
 }
 
 .bombe--critical {
@@ -264,12 +330,36 @@
   }
 }
 
+@keyframes bombe-highlight-pulse {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 1.1rem rgba(56, 189, 248, 0.35);
+  }
+  to {
+    transform: scale(1.02);
+    box-shadow: 0 0 2.2rem rgba(56, 189, 248, 0.55);
+  }
+}
+
+@media (max-width: 768px) {
+  .bombe__tutorial {
+    position: static;
+    transform: none;
+    margin-bottom: 0.6rem;
+  }
+
+  .bombe__tutorial::after {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bombe,
   .bombe::after,
   .bombe__ring,
   .bombe__halo,
   .bombe__spark,
+  .bombe__display,
   .bombe__time,
   .bombe__blast {
     animation: none !important;
