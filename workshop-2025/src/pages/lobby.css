@@ -98,6 +98,12 @@ body {
   align-items: flex-start;
 }
 
+.enigmes-menu--highlight .enigmes-menu__toggle {
+  animation: enigmes-menu-pulse 1.2s ease-in-out infinite alternate;
+  box-shadow: 0 0 1.6rem rgba(255, 210, 64, 0.45);
+  border-color: rgba(255, 210, 64, 0.6);
+}
+
 .enigmes-menu__trigger {
   display: inline-flex;
   align-items: center;
@@ -191,6 +197,68 @@ body {
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0) scale(1);
+}
+
+.enigmes-menu__tutorial {
+  position: absolute;
+  top: -0.75rem;
+  left: calc(100% + 0.85rem);
+  width: min(18rem, 60vw);
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, rgba(19, 33, 54, 0.95), rgba(9, 19, 33, 0.92));
+  border: 1px solid rgba(255, 210, 64, 0.6);
+  border-left-width: 4px;
+  border-radius: 0.75rem;
+  box-shadow: 0 1.4rem 2.4rem rgba(0, 0, 0, 0.45);
+  color: #fff8e1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 15;
+}
+
+.enigmes-menu__tutorial::after {
+  content: "";
+  position: absolute;
+  right: calc(100% - 0.25rem);
+  top: 1.25rem;
+  width: 0;
+  height: 0;
+  border-top: 0.75rem solid transparent;
+  border-bottom: 0.75rem solid transparent;
+  border-right: 0.85rem solid rgba(255, 210, 64, 0.6);
+  filter: drop-shadow(0 0.25rem 0.35rem rgba(0, 0, 0, 0.45));
+}
+
+.enigmes-menu__tutorial p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.enigmes-menu__tutorial-close {
+  align-self: flex-end;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 210, 64, 0.65);
+  background: rgba(255, 210, 64, 0.15);
+  color: #ffd240;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.enigmes-menu__tutorial-close:hover,
+.enigmes-menu__tutorial-close:focus-visible {
+  background: rgba(255, 210, 64, 0.25);
+  color: #ffec99;
+  outline: none;
+}
+
+.enigmes-menu__tutorial-close:focus-visible {
+  outline: 2px solid rgba(255, 236, 153, 0.65);
+  outline-offset: 2px;
 }
 
 .game-room {
@@ -1204,6 +1272,17 @@ body {
   border-color: rgba(148, 163, 184, 0.15);
 }
 
+@keyframes enigmes-menu-pulse {
+  from {
+    transform: translateY(0);
+    box-shadow: 0 0 1rem rgba(255, 210, 64, 0.35);
+  }
+  to {
+    transform: translateY(-2px);
+    box-shadow: 0 0 2.2rem rgba(255, 210, 64, 0.55);
+  }
+}
+
 @media (max-width: 960px) {
   :root {
     --header-offset: clamp(0.75rem, 3vw, 1.25rem);
@@ -1236,6 +1315,17 @@ body {
 
   .enigmes-menu__panel {
     width: min(100vw - 2.5rem, 340px);
+  }
+
+  .enigmes-menu__tutorial {
+    position: static;
+    width: 100%;
+    border-left-width: 1px;
+    margin-top: 0.35rem;
+  }
+
+  .enigmes-menu__tutorial::after {
+    display: none;
   }
 }
 

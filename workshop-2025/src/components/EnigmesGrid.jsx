@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ENIGMES_PROGRESS_EVENT,
   getEnigmesProgress,
   getStorageKeyForRoom,
 } from "../utils/enigmesProgress";
+import useRoomState from "../hooks/useRoomState";
 
 const GRID_ITEMS = [
   { key: "enigme1", label: "Enigme 1", path: "/enigme1" },
@@ -81,12 +82,21 @@ const resolveRoom = (room) => {
 };
 
 export default function EnigmesGridMenu({ active, room }) {
+  const ENIGME_TUTORIAL_KEY = "enigmeMenuTutorialDismissed";
+  const { missionStarted } = useRoomState();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const resolvedRoom = useMemo(() => resolveRoom(room), [room]);
   const [completedKeys, setCompletedKeys] = useState(() =>
     extractCompletedKeys(getEnigmesProgress(resolvedRoom))
   );
+  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.sessionStorage.getItem(ENIGME_TUTORIAL_KEY) === "true";
+  });
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     setCompletedKeys(extractCompletedKeys(getEnigmesProgress(resolvedRoom)));
@@ -153,6 +163,27 @@ export default function EnigmesGridMenu({ active, room }) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (missionStarted && !tutorialDismissed) {
+      setShowTutorial(true);
+    }
+  }, [missionStarted, tutorialDismissed]);
+
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    setTutorialDismissed(true);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(ENIGME_TUTORIAL_KEY, "true");
+    }
+  }, [ENIGME_TUTORIAL_KEY]);
+
+  const handleToggle = () => {
+    setIsOpen((previous) => !previous);
+    if (showTutorial) {
+      dismissTutorial();
+    }
+  };
+
   const completedCount = useMemo(
     () => Array.from(completedKeys).filter((key) => PLAYABLE_KEYS.has(key)).length,
     [completedKeys]
@@ -161,7 +192,14 @@ export default function EnigmesGridMenu({ active, room }) {
   return (
     <div
       ref={containerRef}
-      className={["enigmes-menu", isOpen ? "enigmes-menu--open" : ""].join(" ").trim()}
+      className={[
+        "enigmes-menu",
+        isOpen ? "enigmes-menu--open" : "",
+        showTutorial ? "enigmes-menu--highlight" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim()}
     >
       <div className="enigmes-menu__trigger">
         <button
@@ -169,7 +207,7 @@ export default function EnigmesGridMenu({ active, room }) {
           className="enigmes-menu__toggle"
           aria-haspopup="true"
           aria-expanded={isOpen}
-          onClick={() => setIsOpen((previous) => !previous)}
+          onClick={handleToggle}
         >
           <span className="enigmes-menu__icon" aria-hidden="true">
             {GRID_ITEMS.map(({ key }) => (
@@ -178,6 +216,22 @@ export default function EnigmesGridMenu({ active, room }) {
           </span>
           <span className="enigmes-menu__label">Selection des enigmes</span>
         </button>
+        {showTutorial ? (
+          <aside className="enigmes-menu__tutorial" role="dialog" aria-live="polite">
+            <p>
+              QG > Portail des enigmes ouvert. Utilisez ce module pour coordonner l equipe entre les
+              differentes zones de la mission.
+            </p>
+            <button
+              type="button"
+              className="enigmes-menu__tutorial-close"
+              onClick={dismissTutorial}
+              aria-label="Fermer le guide des enigmes"
+            >
+              En avant
+            </button>
+          </aside>
+        ) : null}
         {TOTAL_PLAYABLE > 0 ? (
           <span className="enigmes-menu__completion" aria-live="polite">
             {completedCount}/{TOTAL_PLAYABLE}

@@ -70,14 +70,13 @@ export default function Enigme1() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
+        </div>
+      </header>
           {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l enigme (debug)
             </button>
           ) : null}
-        </div>
-      </header>
-
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <p className="game-username">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useRoomState from "../hooks/useRoomState";
-import "./BombeTimer.css";
+import "../styles/components_css/BombeTimer.css";
 
 const TIMER_TUTORIAL_KEY = "timerTutorialDismissed";
 
