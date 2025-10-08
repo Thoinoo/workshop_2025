@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import EnigmePresence from "../components/EnigmePresence";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import errorImg from "../assets/error.png";
@@ -54,6 +55,7 @@ export default function Enigme2() {
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme2" room={room} />
+          <EnigmePresence players={players} scene="enigme2" />
         </div>
 
         <div className="game-header-section game-header-section--timer">
