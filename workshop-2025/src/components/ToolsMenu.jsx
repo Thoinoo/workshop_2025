@@ -35,7 +35,13 @@ export default function ToolsMenu() {
   const [toolFeedback, setToolFeedback] = useState({});
   const [pendingUse, setPendingUse] = useState({});
   const [fileFixerInput, setFileFixerInput] = useState("");
-  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const TUTORIAL_STORAGE_KEY = "toolsTutorialDismissedMission";
+  const [dismissedMissionId, setDismissedMissionId] = useState(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return window.sessionStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
   const [showTutorial, setShowTutorial] = useState(false);
   const containerRef = useRef(null);
 
@@ -53,7 +59,13 @@ export default function ToolsMenu() {
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
-    setTutorialDismissed(true);
+    if (typeof window !== "undefined") {
+      const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+      if (missionId) {
+        window.sessionStorage.setItem(TUTORIAL_STORAGE_KEY, missionId);
+        setDismissedMissionId(missionId);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -99,14 +111,17 @@ export default function ToolsMenu() {
 
   useEffect(() => {
     if (!missionStarted) {
-      setTutorialDismissed(false);
       setShowTutorial(false);
       return;
     }
-    if (!tutorialDismissed) {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+    if (missionId && missionId !== dismissedMissionId) {
       setShowTutorial(true);
     }
-  }, [missionStarted, tutorialDismissed]);
+  }, [missionStarted, dismissedMissionId]);
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev);

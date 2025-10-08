@@ -9,12 +9,24 @@ export default function BombeTimer({ remainingSeconds = null }) {
   const [randomSuffix, setRandomSuffix] = useState("");
   const shouldAnimate = isNumeric && remainingSeconds > 0;
   const { missionStarted } = useRoomState();
-  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const TUTORIAL_STORAGE_KEY = "timerTutorialDismissedMission";
+  const [dismissedMissionId, setDismissedMissionId] = useState(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return window.sessionStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
   const [showTutorial, setShowTutorial] = useState(false);
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
-    setTutorialDismissed(true);
+    if (typeof window !== "undefined") {
+      const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+      if (missionId) {
+        window.sessionStorage.setItem(TUTORIAL_STORAGE_KEY, missionId);
+        setDismissedMissionId(missionId);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -36,14 +48,17 @@ export default function BombeTimer({ remainingSeconds = null }) {
 
   useEffect(() => {
     if (!missionStarted) {
-      setTutorialDismissed(false);
       setShowTutorial(false);
       return;
     }
-    if (!tutorialDismissed) {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+    if (missionId && missionId !== dismissedMissionId) {
       setShowTutorial(true);
     }
-  }, [missionStarted, tutorialDismissed]);
+  }, [missionStarted, dismissedMissionId]);
 
   const firstDecimalValue = isNumeric
     ? remainingSeconds <= 0
