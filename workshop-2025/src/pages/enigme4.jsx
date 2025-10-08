@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import EnigmePresence from "../components/EnigmePresence";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import socket from "../socket";
@@ -84,6 +85,7 @@ const handleCellClick = (pos) => {
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme4" room={room} />
+          <EnigmePresence players={players} scene="enigme4" />
         </div>
         <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />

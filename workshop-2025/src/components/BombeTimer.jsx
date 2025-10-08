@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react";
-import "./BombeTimer.css";
+import { useEffect, useRef, useState } from "react";
+import "../assets/components_css/BombeTimer.css";
 
 export default function BombeTimer({ remainingSeconds = null }) {
 
   const isNumeric = Number.isFinite(remainingSeconds);
 
   const [randomSuffix, setRandomSuffix] = useState("");
+  const shouldAnimate = isNumeric && remainingSeconds > 0;
 
   useEffect(() => {
-    if (!isNumeric) {
+    if (!shouldAnimate) {
       setRandomSuffix("");
       return;
     }
-
-    setRandomSuffix("");
 
     // Rotate random digits quickly to mimic sub-decimal countdown noise.
     const interval = setInterval(() => {
@@ -24,14 +23,16 @@ export default function BombeTimer({ remainingSeconds = null }) {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [isNumeric, remainingSeconds]);
+  }, [shouldAnimate]);
 
   const firstDecimalValue = isNumeric
-    ? (Math.floor(remainingSeconds * 10) / 10).toFixed(1)
+    ? remainingSeconds <= 0
+      ? "0"
+      : (Math.floor(remainingSeconds * 10) / 10).toFixed(1)
     : null;
 
-  const formattedTime = isNumeric
-    ? `${firstDecimalValue}${randomSuffix ? randomSuffix : "461"} BTC`
+  const formattedTime =  isNumeric
+    ? `${firstDecimalValue}${shouldAnimate && randomSuffix ? randomSuffix : ""} BTC`
     : "0 BTC";
 
   return (

@@ -6,6 +6,7 @@ import "./lobby.css";
 import BombeTimer from "../components/BombeTimer";
 import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
+import EnigmePresence from "../components/EnigmePresence";
 import GenesisTerminal from "../components/GenesisTerminal";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
@@ -57,6 +58,7 @@ export default function Enigme1() {
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme1" room={room} />
+          <EnigmePresence players={players} scene="enigme1" />
         </div>
 
         <div className="game-header-section game-header-section--timer">
@@ -68,14 +70,13 @@ export default function Enigme1() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
+        </div>
+      </header>
           {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l enigme (debug)
             </button>
           ) : null}
-        </div>
-      </header>
-
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <p className="game-username">

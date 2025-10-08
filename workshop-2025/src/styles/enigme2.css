@@ -1,3 +1,7 @@
+.puzzle-instructions {
+  height: 400px;
+}
+
 /* Centrage local uniquement pour cette énigme */
 .database-error {
   display: flex;
