@@ -783,7 +783,7 @@ export default function GenesisTerminal() {
       case "clear":
         return { type: "clear", command: trimmed, outputs: [] };
       default:
-        addOutput(`Command not found: ${command}`);
+        addOutput(`Command not found, use "help" command`);
     }
 
     return { type: "command", command: trimmed, outputs };
@@ -922,7 +922,7 @@ export default function GenesisTerminal() {
         </form>
       ) : (
         <div className="terminal-observer-note" role="note">
-          Mode analyste : visualisation des résultats en temps réel (saisie exclusive des opérateurs).
+          ! ACCESS DENIED !
         </div>
       )}
     </div>

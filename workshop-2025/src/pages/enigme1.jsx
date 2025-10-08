@@ -130,10 +130,10 @@ export default function Enigme1() {
             <p>
               Trouvez et réparez le block Genesis !
             </p>
-            <p>
+            {/* <p>
               Utilisez le terminal et tapez <code>help</code> si besoin. Gardez ces commandes a
               portee de main :
-            </p>
+            </p> */}
             {/* <ul>
               <li>
                 <code>ls</code> : explorer les repertoires disponibles
