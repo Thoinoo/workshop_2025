@@ -228,42 +228,39 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
   if (reset || !room.timer.started) {
     room.timer.remaining = ROOM_DURATION_SECONDS;
     room.timer.started = true;
+    room.timer.speedMultiplier = 1;
     room.startedAt = Date.now();
     room.missionSummary = null;
     room.missionFailed = false;
   }
 
-  if (room.timer.interval) {
-    return room.timer.remaining;
-  }
+  if (room.timer.interval) return room.timer.remaining;
 
   room.timer.interval = setInterval(() => {
-    room.timer.remaining = Math.max(0, room.timer.remaining - 0.1);
-    io.to(roomName).emit('timerUpdate', room.timer.remaining);
+  if (!room.timer.started) return;
 
-    if (room.timer.remaining <= 0) {
-      clearInterval(room.timer.interval);
-      room.timer.interval = null;
-      room.timer.started = false;
-      room.timer.remaining = 0;
-      const completedAt = Date.now();
-      const elapsedMs = room.startedAt ? completedAt - room.startedAt : 0;
-      room.missionSummary = {
-        completedAt,
-        elapsedSeconds: Math.max(0, Math.round(elapsedMs / 1000)),
-        status: "failed"
-      };
-      room.startedAt = null;
-      room.missionFailed = true;
-      io.to(roomName).emit('missionFailed', {
-        elapsedSeconds: room.missionSummary.elapsedSeconds
-      });
-    }
-  }, 100);
+  const speed = room.timer.speedMultiplier || 1;
+  room.timer.remaining = Math.max(0, room.timer.remaining - 0.1 * speed); // diminue plus vite si speed > 1
 
-  io.to(roomName).emit('timerUpdate', room.timer.remaining);
+  io.to(roomName).emit("timerUpdate", room.timer.remaining);
+
+  if (room.timer.remaining <= 0) {
+    clearInterval(room.timer.interval);
+    room.timer.interval = null;
+    room.timer.started = false;
+    room.timer.remaining = 0;
+    room.missionFailed = true;
+    io.to(roomName).emit("missionFailed", { elapsedSeconds: 0 });
+  }
+}, 100);
+
+
+  io.to(roomName).emit("timerUpdate", room.timer.remaining);
   return room.timer.remaining;
 };
+
+
+
 
 const stopTimerForRoom = (roomName) => {
   const room = rooms[roomName];
@@ -680,6 +677,21 @@ io.on('connection', (socket) => {
     }
     io.to(trimmedRoom).emit('leaderboardEntryRecorded', entry ?? null);
   });
+
+socket.on("accelerateTimer", ({ room, factor } = {}) => {
+  const roomState = rooms[room];
+  if (!roomState || !roomState.timer) return;
+
+  const speedFactor = Number(factor) || 1;
+  roomState.timer.speedMultiplier = speedFactor;
+
+  console.log(`Timer for room "${room}" accelerated x${speedFactor}`);
+
+  // Si le timer n'est pas encore lancé, le démarrer
+  if (!roomState.timer.started) {
+    startTimerForRoom(room, { reset: true });
+  }
+});
 
   socket.on('disconnect', () => {
     const { room } = socket.data || {};

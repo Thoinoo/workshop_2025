@@ -3,7 +3,6 @@ import useRoomState from "../hooks/useRoomState";
 import "../styles/components_css/BombeTimer.css";
 
 export default function BombeTimer({ remainingSeconds = null }) {
-
   const isNumeric = Number.isFinite(remainingSeconds);
 
   const [randomSuffix, setRandomSuffix] = useState("");
@@ -35,11 +34,8 @@ export default function BombeTimer({ remainingSeconds = null }) {
       return;
     }
 
-    // Rotate random digits quickly to mimic sub-decimal countdown noise.
     const interval = setInterval(() => {
-      const digits = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
+      const digits = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
       setRandomSuffix(digits);
     }, 50);
 
@@ -66,7 +62,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
       : (Math.floor(remainingSeconds * 10) / 10).toFixed(1)
     : null;
 
-  const formattedTime =  isNumeric
+  const formattedTime = isNumeric
     ? `${firstDecimalValue}${shouldAnimate && randomSuffix ? randomSuffix : ""} BTC`
     : "0 BTC";
 
