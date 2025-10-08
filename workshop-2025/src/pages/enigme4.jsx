@@ -36,29 +36,31 @@ export default function Enigme4() {
     }
   }, [location.pathname, missionFailed, navigate]);
 
-  const handleCellClick = (cellId) => {
-    if (isCompleted || foundKeys.includes(cellId)) return;
+const handleCellClick = (pos) => {
+  if (!missionStarted || isCompleted || !room) return;
+  if (foundKeys.includes(pos) || wrongCells.includes(pos)) return; // ← remplacé cellState
 
-    if (keyPositions.includes(cellId)) {
-      setFoundKeys((prev) => [...prev, cellId]);
-    } else {
-      if (!wrongCells.includes(cellId)) {
-        const newWrongCells = [...wrongCells, cellId];
-        setWrongCells(newWrongCells);
+  if (keyPositions.includes(pos)) {
+    setFoundKeys((prev) => [...prev, pos]);
 
-        const accelerationFactor = 1 + newWrongCells.length * 0.25;
-
-        // Envoi du signal au serveur
-        socket.emit("accelerateTimer", { room, factor: accelerationFactor });
-
-        // Ajout d'un message système dans le chat
-        sendMessage({
-          username: "SYSTEM",
-          message: `⚠️ La vitesse du timer a été augmentée x${accelerationFactor.toFixed(2)} !`
-        });
-      }
+    if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
+      setEnigmeStatus(room, "enigme4", true);
+      socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
     }
-  };
+  } else {
+    setWrongCells((prev) => [...prev, pos]);
+
+    const factor = (wrongCells.length + 1) * 2; // 1ère mauvaise = x2, 2ème = x4, 3ème = x6
+    socket.emit("accelerateTimer", { room, factor });
+
+    socket.emit("chatMessage", {
+      room,
+      username: "SYSTEM",
+      message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`
+    });
+  }
+};
+
 
   useEffect(() => {
     if (foundKeys.length === keyPositions.length && !isCompleted) {
