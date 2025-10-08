@@ -59,9 +59,9 @@ export default function Preparation() {
           </p>
         </div>
 
-        <div className="game-header-section game-header-section--timer">
+        {/* <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={timerRemaining} />
-        </div>
+        </div> */}
 
         <div className="game-header-section game-header-section--actions">
           {isHost ? (
