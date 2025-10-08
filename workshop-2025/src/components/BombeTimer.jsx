@@ -79,8 +79,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
         {showTutorial ? (
           <div className="bombe__tutorial" role="dialog" aria-live="polite">
             <p>
-              QG - Compte a rebours actif. Ce compteur BTC mesure l energie restante avant effondrement.
-              Gardez-le dans le vert si vous voulez sortir vivants.
+              Ne laissez pas les Bicoin tomber à zéro !
             </p>
             <button
               type="button"

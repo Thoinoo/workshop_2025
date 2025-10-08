@@ -230,8 +230,7 @@ export default function EnigmesGridMenu({ active, room }) {
         {showTutorial ? (
           <aside className="enigmes-menu__tutorial" role="dialog" aria-live="polite">
             <p>
-              QG - Portail des enigmes ouvert. Utilisez ce module pour coordonner l equipe entre les
-              differentes zones de la mission.
+              Voici vos Missions agents !
             </p>
             <button
               type="button"

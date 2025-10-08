@@ -396,8 +396,7 @@ export default function ToolsMenu() {
       {showTutorial ? (
         <aside className="tools-menu__tutorial" role="dialog" aria-live="polite">
           <p className="tools-menu__tutorial-text">
-            QG - Acces prioritaire debloque : vos outils ont ete glisses dans le terminal.
-            Utilisez-les vite pour stabiliser la mission.
+            Vous trouverez vos outils ici !
           </p>
           <button
             type="button"
