@@ -1634,47 +1634,56 @@ body {
 /* --- Enigme 4 interactive grid --- */
 .puzzle-grid {
   display: grid;
-  grid-template-columns: repeat(4, 70px);
-  grid-template-rows: repeat(4, 70px);
-  gap: 10px;
-  justify-content: center;
+  grid-template-columns: repeat(4, 90px);
+  grid-template-rows: repeat(4, 90px);
+  gap: 12px;
   margin-top: 20px;
+  justify-content: center;
 }
 
 .puzzle-cell {
   display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: #1e1e1e;
-  border: 1px solid #00bcd4;
-  color: #00bcd4;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1.3rem;
   font-weight: bold;
-  font-size: 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .puzzle-cell:hover {
   background-color: #263238;
 }
 
+/* État trouvé (clé) */
 .puzzle-cell.found {
-  background-color: rgba(0, 255, 100, 0.15);
+  background: linear-gradient(145deg, #033920, #008f5d);
+  color: #fff;
   border-color: #00ff88;
+  animation: reveal-key 0.4s ease-out;
 }
 
+/* État mauvais (croix) */
 .puzzle-cell.wrong {
-  background-color: rgba(255, 0, 0, 0.15);
-  border-color: #ff4444;
+  background: linear-gradient(145deg, #6e1414, #8f0000);
+  border-color: #ff3b3b;
+  animation: reveal-wrong 0.4s ease-out;
 }
 
 .key-icon {
   color: #00ff88;
-  width: 90%;
-  height: 90%;
+  width: 80%;
+  height: 80%;
   padding: 10px;
   object-fit: contain;
+  transform: scale(1);
+  animation: pop-in 0.4s ease forwards;
 }
 
 .wrong-icon {
@@ -1683,6 +1692,8 @@ body {
   padding: 10px;
   object-fit: contain;
   color: rgba(255, 0, 0, 0.5);
+  transform: scale(1);
+  animation: pop-in 0.4s ease forwards;
 }
 
 .enigme-presence {
@@ -1745,4 +1756,87 @@ body {
   font-style: italic;
   opacity: 0.8;
 }
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-15deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
 
+@keyframes reveal-key {
+  from {
+    background-color: transparent;
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+    background: linear-gradient(145deg, #033920, #008f5d);
+  }
+}
+
+@keyframes reveal-wrong {
+  from {
+    background-color: transparent;
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+    background: linear-gradient(145deg, #6e1414, #8f0000);
+  }
+}
+
+/* ===============================
+   RESPONSIVE
+=============================== */
+
+@media (max-width: 1024px) {
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .puzzle-grid {
+    grid-template-columns: repeat(4, 70px);
+    grid-template-rows: repeat(4, 70px);
+    gap: 10px;
+  }
+
+  .chat-panel {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .puzzle-grid {
+    grid-template-columns: repeat(4, 60px);
+    grid-template-rows: repeat(4, 60px);
+  }
+
+  .key-icon,
+  .wrong-icon {
+    font-size: 2rem;
+  }
+}
+
+/* ===============================
+   SUCCÈS / DÉFAITE - COHÉRENCE VISUELLE
+=============================== */
+
+.success-banner,
+.defeat-banner {
+  animation: fadeInScale 0.6s ease forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

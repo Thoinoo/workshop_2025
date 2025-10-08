@@ -22,7 +22,8 @@ export default function Enigme4() {
 
   const [foundKeys, setFoundKeys] = useState([]);
   const [wrongCells, setWrongCells] = useState([]);
-  const keyPositions = ["A2", "C3", "D1"]; // cases contenant les clés
+  const [clickedCell, setClickedCell] = useState(null);
+  const keyPositions = ["A2", "C3", "D1"];
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -40,39 +41,40 @@ export default function Enigme4() {
     if (!missionStarted || isCompleted || !room) return;
     if (foundKeys.includes(pos) || wrongCells.includes(pos)) return;
 
+    setClickedCell(pos);
+
     if (keyPositions.includes(pos)) {
       setFoundKeys((prev) => [...prev, pos]);
 
       if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
+        // ✅ Marquer comme terminée
         setEnigmeStatus(room, "enigme4", true);
         socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+
+        // 🕒 Stopper le timer pour tout le monde
+        socket.emit("stopTimer", { room });
       }
     } else {
       setWrongCells((prev) => [...prev, pos]);
-
-      const factor = (wrongCells.length + 1) * 2; // vitesse du timer
+      const factor = (wrongCells.length + 1) * 2;
       socket.emit("accelerateTimer", { room, factor });
-
       socket.emit("chatMessage", {
         room,
         username: "SYSTEM",
-        message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`
+        message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`,
       });
     }
+
+    setTimeout(() => setClickedCell(null), 300);
   };
 
   useEffect(() => {
     if (foundKeys.length === keyPositions.length && !isCompleted) {
       setEnigmeStatus(room, "enigme4", true);
       socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+      socket.emit("stopTimer", { room }); // stop du timer
     }
   }, [foundKeys, isCompleted, room]);
-
-  const handleDebugComplete = () => {
-    if (!room || isCompleted) return;
-    setEnigmeStatus(room, "enigme4", true);
-    socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-  };
 
   const letters = ["A", "B", "C", "D"];
   const numbers = [1, 2, 3, 4];
@@ -93,30 +95,39 @@ export default function Enigme4() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-          {!isCompleted && (
-            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
-              Valider l'énigme (debug)
-            </button>
-          )}
         </div>
       </header>
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 4</h2>
-          <p>Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. Avez vous été attentifs aux épreuves que vous avez traversées jusqu'à maintenant ?<br></br> [ATTENTION] Cliquer sur une mauvaise case augmente la vitesse de réduction de BTC. Comme quoi une erreur est vite arrivée...</p>
+          <p>
+            Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
+            Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />
+            <strong>[ATTENTION]</strong> Cliquer sur une mauvaise case augmente la vitesse de
+            réduction de BTC. Comme quoi une erreur est vite arrivée...
+          </p>
 
           <div className="puzzle-grid">
             {cells.map((cell) => {
               const isKey = foundKeys.includes(cell);
               const isWrong = wrongCells.includes(cell);
+              const isClicked = clickedCell === cell;
               return (
                 <div
                   key={cell}
-                  className={`puzzle-cell ${isKey ? "found" : ""} ${isWrong ? "wrong" : ""}`}
+                  className={`puzzle-cell ${isKey ? "found" : ""} ${
+                    isWrong ? "wrong" : ""
+                  } ${isClicked ? "clicked" : ""}`}
                   onClick={() => handleCellClick(cell)}
                 >
-                  {isKey ? <FaKey className="key-icon" /> : isWrong ? <FaTimes className="wrong-icon" /> : cell}
+                  {isKey ? (
+                    <FaKey className="icon key-icon" />
+                  ) : isWrong ? (
+                    <FaTimes className="icon wrong-icon" />
+                  ) : (
+                    cell
+                  )}
                 </div>
               );
             })}
