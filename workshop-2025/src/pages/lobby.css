@@ -1646,7 +1646,7 @@ body {
   justify-content: center;
   align-items: center;
   background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid #00BCD4;
   color: #fff;
   font-size: 1.3rem;
   font-weight: bold;
