@@ -3,6 +3,23 @@
   display: inline-block;
 }
 
+.tools-menu--highlight .tools-menu__toggle {
+  animation: tools-menu-pulse 1.2s ease-in-out infinite alternate;
+  box-shadow: 0 0 1.5rem rgba(0, 255, 209, 0.45);
+  border-color: rgba(0, 255, 209, 0.65);
+}
+
+@keyframes tools-menu-pulse {
+  from {
+    transform: scale(0.5) translateY(0);
+    box-shadow: 0 0 0.75rem rgba(0, 255, 209, 0.25);
+  }
+  to {
+    transform: scale(0.52) translateY(-2px);
+    box-shadow: 0 0 2rem rgba(0, 255, 209, 0.55);
+  }
+}
+
 .tools-menu__toggle {
   position: relative;
   z-index: 2;
@@ -31,6 +48,69 @@
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.tools-menu__tutorial {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(18rem, 60vw);
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, rgba(10, 25, 36, 0.95), rgba(7, 18, 28, 0.95));
+  border: 1px solid rgba(0, 255, 209, 0.45);
+  border-radius: 0.75rem;
+  box-shadow: 0 1.25rem 2.25rem rgba(0, 0, 0, 0.45);
+  color: #f5f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  z-index: 5;
+}
+
+.tools-menu__tutorial::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.65rem;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 0.75rem solid transparent;
+  border-right: 0.75rem solid transparent;
+  border-bottom: 0.85rem solid rgba(0, 255, 209, 0.45);
+  filter: drop-shadow(0 0.25rem 0.35rem rgba(0, 0, 0, 0.35));
+}
+
+.tools-menu__tutorial-text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.tools-menu__tutorial-close {
+  align-self: flex-end;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 209, 0.55);
+  background: rgba(0, 255, 209, 0.12);
+  color: #00ffd1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.tools-menu__tutorial-close:hover,
+.tools-menu__tutorial-close:focus-visible {
+  background: rgba(0, 255, 209, 0.2);
+  color: #0bffff;
+  outline: none;
+}
+
+.tools-menu__tutorial-close:focus-visible {
+  outline: 2px solid rgba(0, 255, 209, 0.45);
+  outline-offset: 2px;
 }
 
 .tools-menu__header {
@@ -180,5 +260,15 @@
 
   .tools-menu.is-open .tools-menu__panel {
     transform: translate(-50%, 0);
+  }
+
+  .tools-menu__tutorial {
+    position: static;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+
+  .tools-menu__tutorial::after {
+    display: none;
   }
 }
