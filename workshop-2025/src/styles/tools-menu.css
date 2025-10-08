@@ -27,6 +27,17 @@
   transform: scale(1);
 }
 
+/* Variante locale de .game-secondary pour le bouton ToolsMenu, avec padding réduit */
+.tools-menu .tools-menu__toggle.game-secondary {
+  border-radius: 999px;
+  padding: 3px; /* réduit par rapport au global */
+  font-size: 1px;
+  background-color: #ffffff00;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0s ease, background-color 0s ease;
+}
+
 .tools-menu__panel {
   position: absolute;
   right: 0;
