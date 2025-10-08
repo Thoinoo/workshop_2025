@@ -207,6 +207,7 @@ export default function Enigme2() {
             La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
           </p>
           <div className="puzzle-instructions" ref={containerRef}>
+          <div className="puzzle-instructions-enigme2">
             {/* Lignes de liaison */}
             <svg
               className="links-overlay"
@@ -293,6 +294,7 @@ export default function Enigme2() {
                 <span>{node.id}</span>
               </div>
             ))}
+          </div>
           </div>
         </section>
         <aside className="chat-panel">
