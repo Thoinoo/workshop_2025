@@ -28,6 +28,8 @@ export default function Enigme3() {
   });
   const [hoveredWallet, setHoveredWallet] = useState(null);
   const [dragOverWallet, setDragOverWallet] = useState(null);
+  const [draggingKey, setDraggingKey] = useState(null);
+  const [keyTrayDropActive, setKeyTrayDropActive] = useState(false);
 
   const wallets = [
     {
@@ -60,6 +62,18 @@ export default function Enigme3() {
   const allCorrect =
     puzzleState.completed ||
     wallets.every(({ name }) => puzzleState.selections[name] === correctMapping[name]);
+  const walletFeedbackValues = Object.values(puzzleState.feedback || {});
+  const hasValidationFeedback = walletFeedbackValues.length > 0;
+  const isValidationSuccess =
+    puzzleState.completed ||
+    (hasValidationFeedback && walletFeedbackValues.every((value) => value === "correct"));
+  const keyAssignments = puzzleState.selections || {};
+  const keyToWalletMap = Object.entries(keyAssignments).reduce((acc, [walletName, keyName]) => {
+    if (keyName) {
+      acc[keyName] = walletName;
+    }
+    return acc;
+  }, {});
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) navigate("/preparation", { replace: true });
@@ -119,13 +133,24 @@ export default function Enigme3() {
   };
 
   // drag handlers
-  const handleDragStart = (event, keyName) => {
+  const handleDragStart = (event, keyName, originWallet = null) => {
     if (puzzleState.completed) {
       event.preventDefault();
       return;
     }
+    const payload = JSON.stringify({ keyName, originWallet });
+    event.dataTransfer.setData("application/enigme3-key", payload);
     event.dataTransfer.setData("text/plain", keyName);
+    event.dataTransfer.effectAllowed = "move";
     setDragOverWallet(null);
+    setDraggingKey({ keyName, originWallet });
+    setKeyTrayDropActive(false);
+  };
+
+  const handleDragEnd = () => {
+    setDragOverWallet(null);
+    setDraggingKey(null);
+    setKeyTrayDropActive(false);
   };
 
   const handleDragOver = (event, walletName) => {
@@ -133,6 +158,7 @@ export default function Enigme3() {
       return;
     }
     event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
     setDragOverWallet(walletName);
   };
 
@@ -146,7 +172,20 @@ export default function Enigme3() {
       return;
     }
     event.preventDefault();
-    const keyName = event.dataTransfer.getData("text/plain");
+    const serialized = event.dataTransfer.getData("application/enigme3-key");
+    let keyName = "";
+    let originWallet = null;
+    if (serialized) {
+      try {
+        const parsed = JSON.parse(serialized);
+        keyName = parsed.keyName;
+        originWallet = parsed.originWallet || null;
+      } catch (error) {
+        keyName = event.dataTransfer.getData("text/plain");
+      }
+    } else {
+      keyName = event.dataTransfer.getData("text/plain");
+    }
     if (!keyName) {
       return;
     }
@@ -156,8 +195,74 @@ export default function Enigme3() {
       return;
     }
 
+    const displacedKey = puzzleState.selections[walletName];
+
     socket.emit("enigme3:assignKey", { room, wallet: walletName, key: keyName }, () => {});
+
+    if (originWallet && originWallet !== walletName && displacedKey && displacedKey !== keyName) {
+      socket.emit("enigme3:assignKey", { room, wallet: originWallet, key: displacedKey }, () => {});
+    }
+
     setDragOverWallet(null);
+    setDraggingKey(null);
+  };
+
+  const handleRemoveFromWallet = (walletName) => {
+    if (puzzleState.completed || !missionStarted || !room) {
+      return;
+    }
+    socket.emit("enigme3:assignKey", { room, wallet: walletName, key: null }, () => {});
+    setDragOverWallet(null);
+    setDraggingKey(null);
+  };
+
+  const handleKeyTrayDragOver = (event) => {
+    if (puzzleState.completed) {
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setKeyTrayDropActive(true);
+  };
+
+  const handleKeyTrayDragLeave = () => {
+    setKeyTrayDropActive(false);
+  };
+
+  const handleKeyTrayDrop = (event) => {
+    if (puzzleState.completed || !missionStarted || !room) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    setKeyTrayDropActive(false);
+
+    const serialized = event.dataTransfer.getData("application/enigme3-key");
+    let keyName = "";
+    let originWallet = draggingKey?.originWallet || null;
+
+    if (serialized) {
+      try {
+        const parsed = JSON.parse(serialized);
+        keyName = parsed.keyName || "";
+        originWallet = parsed.originWallet || originWallet;
+      } catch (error) {
+        keyName = event.dataTransfer.getData("text/plain");
+      }
+    } else {
+      keyName = event.dataTransfer.getData("text/plain");
+    }
+
+    if (!originWallet) {
+      setDragOverWallet(null);
+      setDraggingKey(null);
+      return;
+    }
+
+    socket.emit("enigme3:assignKey", { room, wallet: originWallet, key: null }, () => {});
+    setDragOverWallet(null);
+    setDraggingKey(null);
   };
 
   const handleCheck = () => {
@@ -178,8 +283,6 @@ export default function Enigme3() {
         viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        whileHover={{ scale: 1.06, y: -6 }}
-        transition={{ type: "spring", stiffness: 300 }}
       >
         <circle cx="20" cy="20" r="10" stroke={stroke} strokeWidth="2.5" fill="rgba(255,255,255,0.01)" />
         <rect x="28" y="18" width="22" height="6" rx="2" stroke={stroke} strokeWidth="2.5" fill="none" />
@@ -221,14 +324,10 @@ export default function Enigme3() {
 
   return (
     <div className="game-page">
-      <header className="game-header">
+      <header className="game-header game-header--timer-detached">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme3" room={room} />
           <EnigmePresence players={players} scene="enigme3" />
-        </div>
-
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -243,6 +342,12 @@ export default function Enigme3() {
           )}
         </div>
       </header>
+
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
 
       <div className="game-layout">
         <section className="game-card puzzle-content" style={{ position: "relative" }}>
@@ -267,32 +372,105 @@ export default function Enigme3() {
           </div>
 
           <div style={bgStyle} className="relative">
-            {/* Keys */}
-            <div style={{ display: "flex", gap: 28, justifyContent: "center", marginBottom: 24 }}>
-              {keys.map((k) => {
-                const used = Object.values(puzzleState.selections || {}).includes(k.name);
-                if (used) return null;
-                return (
-                  <motion.div
-                    key={k.name}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, k.name)}
-                    whileHover={{ scale: 1.06, y: -6 }}
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      width: 72,
-                      height: 72,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: puzzleState.completed ? "not-allowed" : "grab",
-                      opacity: puzzleState.completed ? 0.35 : 1
-                    }}
-                  >
-                    <KeySVG id={k.name} size={56} />
-                  </motion.div>
-                );
-              })}
+            {/* Key tray */}
+            <div
+              onDrop={handleKeyTrayDrop}
+              onDragOver={handleKeyTrayDragOver}
+              onDragLeave={handleKeyTrayDragLeave}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+                padding: "18px 24px 24px",
+                marginBottom: 28,
+                borderRadius: 14,
+                border: keyTrayDropActive
+                  ? "2px dashed rgba(34,211,238,0.7)"
+                  : "2px dashed rgba(148,163,184,0.35)",
+                background: keyTrayDropActive
+                  ? "linear-gradient(180deg, rgba(14,65,80,0.55), rgba(11,30,45,0.75))"
+                  : "linear-gradient(180deg, rgba(12,20,35,0.45), rgba(6,12,25,0.72))",
+                transition: "border 0.18s ease, background 0.18s ease"
+              }}
+            >
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, color: "#e2e8f0" }}>
+                Zone des cles
+              </div>
+              <div style={{ color: "#94a3b8", fontSize: 13, textAlign: "center", maxWidth: 420 }}>
+                Fais glisser une cle depuis cette zone vers un wallet, ou depose une cle ici pour la recuperer.
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 20,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  width: "100%"
+                }}
+              >
+                {keys.map((k) => {
+                  const assignedWallet = keyToWalletMap[k.name];
+                  const isAvailable = !assignedWallet;
+                  return (
+                    <motion.div
+                      key={k.name}
+                      draggable={isAvailable && !puzzleState.completed}
+                      onDragStart={(e) => handleDragStart(e, k.name, null)}
+                      onDragEnd={handleDragEnd}
+                      style={{
+                        width: 88,
+                        height: 88,
+                        borderRadius: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        position: "relative",
+                        background: isAvailable
+                          ? "rgba(148,163,184,0.08)"
+                          : "rgba(30,41,59,0.45)",
+                        border: isAvailable
+                          ? "1px solid rgba(148,163,184,0.35)"
+                          : "1px solid rgba(71,85,105,0.5)",
+                        cursor:
+                          puzzleState.completed || !isAvailable ? "not-allowed" : "grab",
+                        opacity: puzzleState.completed
+                          ? 0.4
+                          : isAvailable
+                          ? 1
+                          : 0.55,
+                        transition: "all 0.18s ease"
+                      }}
+                      title={
+                        isAvailable
+                          ? "Cle disponible"
+                          : `Placee sur ${assignedWallet}`
+                      }
+                    >
+                      <KeySVG id={k.name} size={isAvailable ? 56 : 48} />
+                      {assignedWallet && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: 6,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            fontSize: 11,
+                            color: "#cbd5f5",
+                            textAlign: "center",
+                            lineHeight: 1.1,
+                            padding: "2px 6px",
+                            borderRadius: 6,
+                            background: "rgba(15,23,42,0.8)"
+                          }}
+                        >
+                          {assignedWallet}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Wallets */}
@@ -301,55 +479,71 @@ export default function Enigme3() {
                 const walletFeedback = puzzleState.feedback[w.name];
                 const isCorrect =
                   walletFeedback === "correct" ||
-                  (puzzleState.completed &&
-                    puzzleState.selections[w.name] === correctMapping[w.name]);
-                const isIncorrect = walletFeedback === "incorrect";
+                  (puzzleState.completed && puzzleState.selections[w.name] === correctMapping[w.name]);
                 const isTargeted = dragOverWallet === w.name;
                 const assignedKey = puzzleState.selections[w.name];
-                const feedbackIcon =
-                  walletFeedback === "correct"
-                    ? "✅"
-                    : walletFeedback === "incorrect"
-                    ? "❌"
-                    : "";
+                const isHovered = hoveredWallet === w.name;
+                const isOriginWallet = draggingKey?.originWallet === w.name;
+                const highlightActive = !puzzleState.completed && (isTargeted || isHovered);
+                const walletBorder = isCorrect
+                  ? "3px solid rgba(72,255,138,0.9)"
+                  : highlightActive
+                  ? "2px solid rgba(46,224,230,0.55)"
+                  : "2px solid rgba(120,120,140,0.25)";
+                const walletShadow = isCorrect
+                  ? "0 12px 40px rgba(72,255,138,0.18)"
+                  : highlightActive
+                  ? "0 0 32px rgba(46,224,230,0.28)"
+                  : "inset 0 -6px 12px rgba(0,0,0,0.6)";
+                const showTooltip = hoveredWallet === w.name;
                 return (
-                  <div key={w.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div
+                    key={w.name}
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
+                      paddingBottom: 88
+                    }}
+                  >
                     <motion.div
                       onDrop={(e) => handleDrop(e, w.name)}
                       onDragOver={(e) => handleDragOver(e, w.name)}
                       onDragLeave={handleDragLeave}
                       onMouseEnter={() => setHoveredWallet(w.name)}
                       onMouseLeave={() => setHoveredWallet(null)}
-                      whileHover={{ scale: puzzleState.completed ? 1 : 1.03 }}
-                      animate={
-                        isIncorrect
-                          ? { x: [0, -6, 6, -4, 4, 0] }
-                          : isTargeted && !puzzleState.completed
-                          ? { boxShadow: ["0 0 0 rgba(0,0,0,0)", "0 0 28px rgba(0,255,200,0.22)"] }
-                          : { scale: isCorrect ? 1.04 : 1 }
-                      }
-                      transition={{ type: "spring", stiffness: 300, damping: 14 }}
                       style={{
                         width: 140,
                         height: 140,
                         borderRadius: 14,
                         background: "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
-                        border: isCorrect ? "3px solid rgba(72,255,138,0.9)" : "2px solid rgba(120,120,140,0.25)",
-                        boxShadow: isCorrect ? "0 12px 40px rgba(72,255,138,0.08)" : "inset 0 -6px 12px rgba(0,0,0,0.6)",
+                        border: walletBorder,
+                        boxShadow: walletShadow,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
                         position: "relative",
                         padding: 8,
-                        opacity: puzzleState.completed ? 0.9 : 1
+                        opacity: puzzleState.completed ? 0.9 : isOriginWallet ? 0.85 : 1,
+                        transition: "box-shadow 0.18s ease, border 0.18s ease, opacity 0.18s ease"
                       }}
                     >
                       <div style={{ fontSize: 38 }}>{w.icon}</div>
                       <div style={{ marginTop: 6, fontWeight: 800, color: "#e6eef8" }}>{w.name}</div>
 
                       {assignedKey ? (
-                        <div
+                        <motion.div
+                          draggable={!puzzleState.completed}
+                          onDragStart={(e) => handleDragStart(e, assignedKey, w.name)}
+                          onDragEnd={handleDragEnd}
+                          onDoubleClick={() => handleRemoveFromWallet(w.name)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            handleRemoveFromWallet(w.name);
+                          }}
                           style={{
                             position: "absolute",
                             top: "50%",
@@ -357,19 +551,17 @@ export default function Enigme3() {
                             transform: "translate(-50%, -10%)",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            justifyContent: "center",
+                            cursor: puzzleState.completed ? "not-allowed" : "grab"
                           }}
+                          title="Double-clic ou clic droit pour retirer la cle"
                         >
                           <KeySVG id={assignedKey} size={36} />
-                        </div>
+                        </motion.div>
                       ) : null}
-
-                      <div style={{ position: "absolute", top: 8, right: 8, fontSize: 16 }}>
-                        {feedbackIcon}
-                      </div>
                     </motion.div>
 
-                    {hoveredWallet === w.name && (
+                    {showTooltip && (
                       <motion.div
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -384,10 +576,15 @@ export default function Enigme3() {
                           textAlign: "center",
                           fontSize: 13,
                           lineHeight: 1.2,
-                          marginTop: 6
+                          position: "absolute",
+                          top: "100%",
+                          left: "50%",
+                          transform: "translate(-50%, 16px)",
+                          pointerEvents: "none",
+                          zIndex: 10
                         }}
                       >
-                        <div style={{ fontWeight: 800, marginBottom: 6, color: "#fff" }}>{w.name} — Indice</div>
+                        <div style={{ fontWeight: 800, marginBottom: 6, color: "#fff" }}>{w.name} - Indice</div>
                         <div>{w.hint}</div>
                       </motion.div>
                     )}
@@ -395,6 +592,25 @@ export default function Enigme3() {
                 );
               })}
             </div>
+
+            {draggingKey && (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#94a3b8",
+                  fontSize: 14,
+                  marginTop: 12,
+                  marginBottom: 20,
+                  maxWidth: 520,
+                  marginLeft: "auto",
+                  marginRight: "auto"
+                }}
+              >
+                {draggingKey.originWallet
+                  ? `Depose ${draggingKey.keyName} sur un autre wallet pour l'echanger ou dans la zone des cles pour la recuperer.`
+                  : `Amene ${draggingKey.keyName} sur le wallet correspondant.`}
+              </div>
+            )}
 
             <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
               <button
@@ -414,6 +630,20 @@ export default function Enigme3() {
               </button>
             </div>
 
+            {(hasValidationFeedback || puzzleState.completed) && (
+              <div
+                style={{
+                  marginTop: 16,
+                  textAlign: "center",
+                  fontWeight: 700,
+                  color: isValidationSuccess ? "#4ade80" : "#f87171",
+                  letterSpacing: 0.4
+                }}
+              >
+                {isValidationSuccess ? "Combinaison validée !" : "Combinaison incorrecte, réessayez."}
+              </div>
+            )}
+
             {allCorrect && <ConfettiLayer />}
           </div>
         </section>
@@ -428,13 +658,6 @@ export default function Enigme3() {
     </div>
   );
 }
-
-
-
-
-
-
-
 
 
 

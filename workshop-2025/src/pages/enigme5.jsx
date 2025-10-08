@@ -41,14 +41,10 @@ export default function Enigme5() {
 
   return (
     <div className="game-page">
-      <header className="game-header">
+      <header className="game-header game-header--timer-detached">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme5" room={room} />
           <EnigmePresence players={players} scene="enigme5" />
-        </div>
-
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -63,6 +59,11 @@ export default function Enigme5() {
           ) : null}
         </div>
       </header>
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
 
       <div className="game-layout">
         <section className="game-card puzzle-content">

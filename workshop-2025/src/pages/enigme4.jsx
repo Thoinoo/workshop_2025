@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -106,13 +106,10 @@ export default function Enigme4() {
 
   return (
     <div className="game-page">
-      <header className="game-header">
+      <header className="game-header game-header--timer-detached">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme4" room={room} />
           <EnigmePresence players={players} scene="enigme4" />
-        </div>
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
         <div className="game-header-section game-header-section--actions">
           <ToolsMenu />
@@ -121,6 +118,11 @@ export default function Enigme4() {
           </button>
         </div>
       </header>
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
 
 {/* Bouton debug */}
           {!isCompleted && (

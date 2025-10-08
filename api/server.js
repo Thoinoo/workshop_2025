@@ -560,14 +560,15 @@ io.on('connection', (socket) => {
   socket.on('enigme3:assignKey', ({ room, wallet, key } = {}, callback = () => {}) => {
     const trimmedRoom = (room ?? '').trim();
     const normalizedWallet = typeof wallet === 'string' ? wallet.trim() : '';
-    const normalizedKey = typeof key === 'string' ? key.trim() : '';
+    const hasKeyPayload = typeof key === 'string' && key.trim().length > 0;
+    const normalizedKey = hasKeyPayload ? key.trim() : '';
     const username = (socket.data?.username ?? '').trim();
 
-    if (!trimmedRoom || !normalizedWallet || !normalizedKey || !username) {
+    if (!trimmedRoom || !normalizedWallet || !username) {
       callback({ ok: false, error: 'invalid_payload' });
       return;
     }
-    if (!ENIGME3_WALLETS.includes(normalizedWallet) || !ENIGME3_KEYS.includes(normalizedKey)) {
+    if (!ENIGME3_WALLETS.includes(normalizedWallet)) {
       callback({ ok: false, error: 'invalid_target' });
       return;
     }
@@ -576,6 +577,19 @@ io.on('connection', (socket) => {
     const enigme3State = getEnigme3State(roomState);
     if (enigme3State.completed) {
       callback({ ok: false, error: 'completed' });
+      return;
+    }
+    if (!hasKeyPayload) {
+      if (enigme3State.selections[normalizedWallet]) {
+        delete enigme3State.selections[normalizedWallet];
+        delete enigme3State.feedback[normalizedWallet];
+        emitEnigme3State(trimmedRoom);
+      }
+      callback({ ok: true, removed: true });
+      return;
+    }
+    if (!ENIGME3_KEYS.includes(normalizedKey)) {
+      callback({ ok: false, error: 'invalid_target' });
       return;
     }
 

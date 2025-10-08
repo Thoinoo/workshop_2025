@@ -85,6 +85,32 @@ body {
   justify-content: center;
 }
 
+.game-header--timer-detached {
+  position: static;
+  top: auto;
+  z-index: 1;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+.game-timer-sticky {
+  position: sticky;
+  top: var(--header-offset);
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+}
+
+.game-timer-sticky .game-header-section--timer {
+  width: 100%;
+  max-width: clamp(260px, 32vw, 360px);
+  padding: clamp(0.9rem, 2.8vw, 1.25rem);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(16px);
+}
+
 .game-header-section--actions {
   justify-content: flex-end;
   flex-wrap: wrap;

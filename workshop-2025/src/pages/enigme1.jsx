@@ -56,14 +56,10 @@ export default function Enigme1() {
 
   return (
     <div className="game-page">
-      <header className="game-header">
+      <header className="game-header game-header--timer-detached">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme1" room={room} />
           <EnigmePresence players={players} scene="enigme1" />
-        </div>
-
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
 
         <div className="game-header-section game-header-section--actions">
@@ -73,6 +69,11 @@ export default function Enigme1() {
           </button>
         </div>
       </header>
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
           {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l enigme (debug)
