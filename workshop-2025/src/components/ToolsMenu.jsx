@@ -4,8 +4,6 @@ import { TOOL_IDS, TOOL_LIST } from "../constants/tools";
 import "../styles/tools-menu.css";
 import toolsMenuIllustration from "../assets/tools_menu.png";
 
-const TUTORIAL_STORAGE_KEY = "toolsTutorialDismissed";
-
 const formatToolUseError = (code, holder) => {
   switch (code) {
     case "not_holder":
@@ -37,12 +35,7 @@ export default function ToolsMenu() {
   const [toolFeedback, setToolFeedback] = useState({});
   const [pendingUse, setPendingUse] = useState({});
   const [fileFixerInput, setFileFixerInput] = useState("");
-  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.sessionStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
-  });
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const containerRef = useRef(null);
 
@@ -61,9 +54,6 @@ export default function ToolsMenu() {
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
     setTutorialDismissed(true);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(TUTORIAL_STORAGE_KEY, "true");
-    }
   }, []);
 
   useEffect(() => {
@@ -108,7 +98,12 @@ export default function ToolsMenu() {
   }, [isFileFixerHolder]);
 
   useEffect(() => {
-    if (missionStarted && !tutorialDismissed) {
+    if (!missionStarted) {
+      setTutorialDismissed(false);
+      setShowTutorial(false);
+      return;
+    }
+    if (!tutorialDismissed) {
       setShowTutorial(true);
     }
   }, [missionStarted, tutorialDismissed]);

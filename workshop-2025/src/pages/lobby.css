@@ -201,13 +201,13 @@ body {
 
 .enigmes-menu__tutorial {
   position: absolute;
-  top: -0.75rem;
-  left: calc(100% + 0.85rem);
+  top: calc(100% + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%);
   width: min(18rem, 60vw);
   padding: 0.85rem 1rem;
   background: linear-gradient(135deg, rgba(19, 33, 54, 0.95), rgba(9, 19, 33, 0.92));
   border: 1px solid rgba(255, 210, 64, 0.6);
-  border-left-width: 4px;
   border-radius: 0.75rem;
   box-shadow: 0 1.4rem 2.4rem rgba(0, 0, 0, 0.45);
   color: #fff8e1;
@@ -220,13 +220,14 @@ body {
 .enigmes-menu__tutorial::after {
   content: "";
   position: absolute;
-  right: calc(100% - 0.25rem);
-  top: 1.25rem;
+  left: 50%;
+  top: -0.75rem;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-top: 0.75rem solid transparent;
-  border-bottom: 0.75rem solid transparent;
-  border-right: 0.85rem solid rgba(255, 210, 64, 0.6);
+  border-left: 0.75rem solid transparent;
+  border-right: 0.75rem solid transparent;
+  border-bottom: 0.85rem solid rgba(255, 210, 64, 0.6);
   filter: drop-shadow(0 0.25rem 0.35rem rgba(0, 0, 0, 0.45));
 }
 
@@ -261,6 +262,10 @@ body {
   outline-offset: 2px;
 }
 
+.enigmes-menu__completion {
+  position: relative;
+  z-index: 2;
+}
 .game-room {
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   font-weight: 700;
@@ -1320,8 +1325,8 @@ body {
   .enigmes-menu__tutorial {
     position: static;
     width: 100%;
-    border-left-width: 1px;
     margin-top: 0.35rem;
+    transform: none;
   }
 
   .enigmes-menu__tutorial::after {

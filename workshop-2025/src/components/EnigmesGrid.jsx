@@ -82,7 +82,6 @@ const resolveRoom = (room) => {
 };
 
 export default function EnigmesGridMenu({ active, room }) {
-  const ENIGME_TUTORIAL_KEY = "enigmeMenuTutorialDismissed";
   const { missionStarted } = useRoomState();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -90,12 +89,7 @@ export default function EnigmesGridMenu({ active, room }) {
   const [completedKeys, setCompletedKeys] = useState(() =>
     extractCompletedKeys(getEnigmesProgress(resolvedRoom))
   );
-  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.sessionStorage.getItem(ENIGME_TUTORIAL_KEY) === "true";
-  });
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
@@ -164,7 +158,12 @@ export default function EnigmesGridMenu({ active, room }) {
   }, [isOpen]);
 
   useEffect(() => {
-    if (missionStarted && !tutorialDismissed) {
+    if (!missionStarted) {
+      setTutorialDismissed(false);
+      setShowTutorial(false);
+      return;
+    }
+    if (!tutorialDismissed) {
       setShowTutorial(true);
     }
   }, [missionStarted, tutorialDismissed]);
@@ -172,10 +171,7 @@ export default function EnigmesGridMenu({ active, room }) {
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
     setTutorialDismissed(true);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(ENIGME_TUTORIAL_KEY, "true");
-    }
-  }, [ENIGME_TUTORIAL_KEY]);
+  }, []);
 
   const handleToggle = () => {
     setIsOpen((previous) => !previous);

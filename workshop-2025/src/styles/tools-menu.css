@@ -52,13 +52,13 @@
 
 .tools-menu__tutorial {
   position: absolute;
-  right: calc(100% + 0.75rem);
-  top: -0.5rem;
+  top: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
   width: min(18rem, 60vw);
   padding: 0.85rem 1rem;
   background: linear-gradient(135deg, rgba(10, 25, 36, 0.95), rgba(7, 18, 28, 0.95));
   border: 1px solid rgba(0, 255, 209, 0.45);
-  border-left-width: 4px;
   border-radius: 0.75rem;
   box-shadow: 0 1.25rem 2.25rem rgba(0, 0, 0, 0.45);
   color: #f5f9fa;
@@ -71,13 +71,14 @@
 .tools-menu__tutorial::after {
   content: "";
   position: absolute;
-  left: 100%;
-  top: 1.5rem;
+  left: 50%;
+  top: -0.65rem;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-top: 0.75rem solid transparent;
-  border-bottom: 0.75rem solid transparent;
-  border-left: 0.85rem solid rgba(0, 255, 209, 0.45);
+  border-left: 0.75rem solid transparent;
+  border-right: 0.75rem solid transparent;
+  border-bottom: 0.85rem solid rgba(0, 255, 209, 0.45);
   filter: drop-shadow(0 0.25rem 0.35rem rgba(0, 0, 0, 0.35));
 }
 
@@ -264,8 +265,7 @@
   .tools-menu__tutorial {
     position: static;
     width: 100%;
-    margin-bottom: 0.75rem;
-    border-left-width: 1px;
+    margin-top: 0.75rem;
   }
 
   .tools-menu__tutorial::after {

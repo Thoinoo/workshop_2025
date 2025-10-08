@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import useRoomState from "../hooks/useRoomState";
 import "../styles/components_css/BombeTimer.css";
 
-const TIMER_TUTORIAL_KEY = "timerTutorialDismissed";
-
 export default function BombeTimer({ remainingSeconds = null }) {
 
   const isNumeric = Number.isFinite(remainingSeconds);
@@ -11,20 +9,12 @@ export default function BombeTimer({ remainingSeconds = null }) {
   const [randomSuffix, setRandomSuffix] = useState("");
   const shouldAnimate = isNumeric && remainingSeconds > 0;
   const { missionStarted } = useRoomState();
-  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.sessionStorage.getItem(TIMER_TUTORIAL_KEY) === "true";
-  });
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
     setTutorialDismissed(true);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(TIMER_TUTORIAL_KEY, "true");
-    }
   }, []);
 
   useEffect(() => {
@@ -45,7 +35,12 @@ export default function BombeTimer({ remainingSeconds = null }) {
   }, [shouldAnimate]);
 
   useEffect(() => {
-    if (missionStarted && !tutorialDismissed) {
+    if (!missionStarted) {
+      setTutorialDismissed(false);
+      setShowTutorial(false);
+      return;
+    }
+    if (!tutorialDismissed) {
       setShowTutorial(true);
     }
   }, [missionStarted, tutorialDismissed]);
