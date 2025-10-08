@@ -11,7 +11,7 @@ const GRID_ITEMS = [
   { key: "enigme2", label: "Enigme 2", path: "/enigme2" },
   { key: "enigme3", label: "Enigme 3", path: "/enigme3" },
   { key: "enigme4", label: "Enigme 4", path: "/enigme4" },
-  { key: "slot-5", label: "A venir", disabled: true },
+  { key: "enigme5", label: "Enigme 5", path: "/enigme5" },
   { key: "slot-6", label: "A venir", disabled: true },
   { key: "slot-7", label: "A venir", disabled: true },
   { key: "slot-8", label: "A venir", disabled: true },
