@@ -25,6 +25,14 @@ export default function Enigme4() {
   const [clickedCell, setClickedCell] = useState(null);
   const keyPositions = ["A2", "C3", "D1"];
 
+  // ✅ Bouton debug pour valider l'énigme
+  const handleDebugComplete = () => {
+    if (!room || isCompleted) return;
+    setEnigmeStatus(room, "enigme4", true);
+    socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+    socket.emit("stopTimer", { room });
+  };
+
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
       navigate("/preparation", { replace: true });
@@ -47,11 +55,8 @@ export default function Enigme4() {
       setFoundKeys((prev) => [...prev, pos]);
 
       if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
-        // ✅ Marquer comme terminée
         setEnigmeStatus(room, "enigme4", true);
         socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-
-        // 🕒 Stopper le timer pour tout le monde
         socket.emit("stopTimer", { room });
       }
     } else {
@@ -72,7 +77,7 @@ export default function Enigme4() {
     if (foundKeys.length === keyPositions.length && !isCompleted) {
       setEnigmeStatus(room, "enigme4", true);
       socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-      socket.emit("stopTimer", { room }); // stop du timer
+      socket.emit("stopTimer", { room });
     }
   }, [foundKeys, isCompleted, room]);
 
@@ -98,6 +103,48 @@ export default function Enigme4() {
         </div>
       </header>
 
+{/* Bouton debug */}
+          {!isCompleted && (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l'énigme (debug)
+            </button>
+          )}
+
+          {isCompleted ? (
+  <article className="enigme-post-completion">
+    <header className="enigme-post-completion__header">
+      <h3>Bravo !!</h3>
+      <h3>Opération Genesis Key</h3>
+      <p className="enigme-post-completion__subtitle">
+        Quatrième bloc du reseau Bitcoin - manifeste technique et politique.
+      </p>
+    </header>
+
+    <div className="enigme-post-completion__grid">
+      <section>
+        <h4>Distribution</h4>
+        <p>
+          En 2010, le premier wallet Bitcoin public fut distribué pour tester les transactions entre utilisateurs.
+        </p>
+      </section>
+      <section>
+        <h4>Sécurité</h4>
+        <p>
+          L'introduction des clés privées multiples pour sécuriser les wallets contre le vol fut instaurée en 2011.
+         
+          
+        </p>
+      </section>
+      <section>
+        <h4>Hiérarchie</h4>
+        <p>
+          En 2013, le développement des wallets HD (Hierarchical Deterministic) a été créé, ce qui a permis la génération de multiples clés à partir d’une seule seed.
+        </p>
+      </section>
+    </div>
+  </article>
+) : null}
+
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 4</h2>
@@ -105,7 +152,7 @@ export default function Enigme4() {
             Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
             Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />
             <strong>[ATTENTION]</strong> Cliquer sur une mauvaise case augmente la vitesse de
-            réduction de BTC. Comme quoi une erreur est vite arrivée...
+            réduction de BTC.
           </p>
 
           <div className="puzzle-grid">
