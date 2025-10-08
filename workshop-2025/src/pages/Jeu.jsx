@@ -112,7 +112,6 @@ export default function Jeu() {
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
         </div>
         <div className="game-header-section game-header-section--actions">
-          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/")}>
             Retour a l'accueil
           </button>
@@ -129,6 +128,7 @@ export default function Jeu() {
 
         <aside className="chat-panel">
           <PlayersList players={players} />
+          <ToolsMenu />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>

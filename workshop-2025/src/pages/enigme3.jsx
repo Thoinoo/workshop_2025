@@ -331,7 +331,6 @@ export default function Enigme3() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
-          <ToolsMenu />
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
@@ -650,6 +649,7 @@ export default function Enigme3() {
 
         <aside className="chat-panel">
           <PlayersList players={players} />
+          <ToolsMenu />
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>

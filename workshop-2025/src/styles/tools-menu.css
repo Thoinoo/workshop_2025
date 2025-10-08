@@ -1,6 +1,12 @@
-.tools-menu {
-  position: relative;
-  display: inline-block;
+﻿.tools-menu {
+  position: fixed;
+  top: clamp(0.75rem, 3vw, 1.6rem);
+  right: clamp(1rem, 4vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  z-index: 9998;
 }
 
 .tools-menu--highlight .tools-menu__toggle {
@@ -22,7 +28,7 @@
 
 .tools-menu__toggle {
   position: relative;
-  z-index: 2;
+  z-index: 9999;
   border: #ffffff;
   transform: scale(1);
 }
@@ -40,24 +46,30 @@
 
 .tools-menu__panel {
   position: absolute;
+  top: calc(100% + 0.75rem);
   right: 0;
-  top: calc(100% + 0.5rem);
-  width: clamp(20rem, 28vw, 24rem);
+  width: min(26rem, calc(100vw - 2.5rem));
+  max-height: min(85vh, 780px);
   background: rgba(10, 16, 25, 0.98);
   border: 1px solid rgba(0, 255, 209, 0.35);
   border-radius: 0.75rem;
   box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
   padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   opacity: 0;
   transform: translateY(-0.5rem);
   pointer-events: none;
   transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 9990;
 }
 
 .tools-menu.is-open .tools-menu__panel {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  z-index: 10000;
 }
 
 .tools-menu__tutorial {
@@ -75,7 +87,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  z-index: 5;
+  z-index: 10001;
 }
 
 .tools-menu__tutorial::after {
@@ -158,8 +170,13 @@
 }
 
 .tools-menu__content {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 0.4rem;
+  margin-right: -0.4rem;
 }
 
 .tools-menu__tool {
@@ -293,16 +310,16 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-@media (max-width: 768px) {
-  .tools-menu__panel {
-    width: min(100vw - 2rem, 24rem);
-    right: auto;
-    left: 50%;
-    transform: translate(-50%, -0.5rem);
+\n@media (max-width: 768px) {
+  .tools-menu {
+    top: 0.75rem;
+    right: 0.75rem;
   }
 
-  .tools-menu.is-open .tools-menu__panel {
-    transform: translate(-50%, 0);
+  .tools-menu__panel {
+    right: 0;
+    width: min(100vw - 1.5rem, 24rem);
+    max-height: calc(100vh - 3rem);
   }
 
   .tools-menu__tutorial {
@@ -315,3 +332,11 @@
     display: none;
   }
 }
+
+
+
+
+
+
+
+
