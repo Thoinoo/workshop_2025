@@ -1,39 +1,96 @@
 .puzzle-instructions {
+  position: relative;
   height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Centrage local uniquement pour cette énigme */
+/* Centrage de l'image database au milieu */
 .database-error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%; /* occupe tout l’espace du parent */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2; /* au-dessus des liens */
 }
 
 .database-error img {
-  width: 120px;
+  width: 90px;
   height: auto;
 }
 
-/* Les nœuds (cercles autour du centre) */
+/* Décor feu en bas-gauche de la database */
+.database-fire {
+  position: absolute;
+  bottom: 7px;
+  left: 3px;
+}
+
+/* Override spécifique pour battre .database-error img */
+.database-error img.database-fire {
+  width: 40px;
+}
+
+/* Mise en avant de la sélection */
+.database-error img.selected {
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.85), 0 10px 24px rgba(59, 130, 246, 0.35);
+}
+
+/* Noeuds disposés autour, aux couleurs du lobby */
 .node {
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 2; /* au-dessus des liens */
   width: 60px;
   height: 60px;
-  background-color: #4caf50;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: bold;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s;
+  font-weight: 700;
+  color: #0f172a; /* couleur texte .game-primary */
+  background: linear-gradient(135deg, #38bdf8, #3b82f6); /* gradient du lobby */
+  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .node:hover {
-  background-color: #45a049;
-  transform: scale(1.1);
+  transform: scale(1.04);
+  box-shadow: 0 16px 32px rgba(59, 130, 246, 0.4);
+}
+
+.node--selected {
+  outline: 3px solid #38bdf8;
+  outline-offset: 0px;
+}
+
+/* Ordinateurs latéraux */
+.computer {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2; /* au-dessus des liens */
+  width: 80px;
+  height: auto;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.computer--left { left: 100px; }
+.computer--right { right: 100px; }
+
+.computer.selected {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.9), 0 12px 24px rgba(15, 23, 42, 0.35);
+}
+
+/* Calque des liens (en dessous des noeuds/DB) */
+.links-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -10,6 +10,8 @@ import EnigmePresence from "../components/EnigmePresence";
 import PuzzleSuccessBanner from "../components/PuzzleSuccessBanner";
 import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import errorImg from "../assets/error.png";
+import computerImg from "../assets/computer.png";
+import fireImg from "../assets/fire.png";
 import "../styles/enigme2.css";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
@@ -20,6 +22,10 @@ export default function Enigme2() {
   const { room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
     useRoomState();
   const isCompleted = useEnigmeCompletion("enigme2", room);
+  const [selected, setSelected] = useState(null); // null | number | 'center'
+  const [links, setLinks] = useState([]); // array of { a: id, b: id }
+  const containerRef = useRef(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -48,7 +54,70 @@ export default function Enigme2() {
     { id: 4, angle: 180 },
     { id: 5, angle: 240 },
     { id: 6, angle: 300 },
+    // Nouveaux nœuds diagonaux (un par "coin"), légèrement plus proches du centre
+    { id: 7, angle: 30, r: 250 },   // coin haut-droite (triangle avec 1 et 2)
+    { id: 8, angle: 150, r: 250 },  // coin haut-gauche (triangle avec 3 et 4)
+    { id: 9, angle: 210, r: 250 },  // coin bas-gauche (triangle avec 4 et 5)
+    { id: 10, angle: 330, r: 250 }, // coin bas-droite (triangle avec 6 et 1)
   ];
+
+  const RADIUS = 160; // distance pixels du centre pour les noeuds
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (!containerRef.current) return;
+      const el = containerRef.current;
+      setSize({ w: el.clientWidth, h: el.clientHeight });
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
+  const positions = useMemo(() => {
+    const cx = size.w / 2;
+    const cy = size.h / 2;
+    const map = new Map();
+    map.set("center", { x: cx, y: cy });
+    // positions des ordinateurs latéraux (doivent correspondre au CSS)
+    const compHalf = 40; // largeur .computer: 80px => moitié = 40
+    const sidePad = 100; // décalage latéral CSS (voir .computer--left/.computer--right)
+    map.set("left", { x: sidePad + compHalf, y: cy });
+    map.set("right", { x: size.w - sidePad - compHalf, y: cy });
+    for (const n of nodes) {
+      const rad = (n.angle * Math.PI) / 180;
+      const rr = n.r ?? RADIUS;
+      const x = cx + rr * Math.cos(rad);
+      const y = cy + rr * Math.sin(rad);
+      map.set(n.id, { x, y });
+    }
+    return map;
+  }, [nodes, size.h, size.w]);
+
+  const handleConnect = (targetId) => {
+    if (selected == null) {
+      setSelected(targetId);
+      return;
+    }
+    if (selected === targetId) {
+      // same selection: deselect
+      setSelected(null);
+      return;
+    }
+    // normalize pair order to avoid duplicates
+    const a = selected;
+    const b = targetId;
+    const keyA = String(a);
+    const keyB = String(b);
+    const [u, v] = keyA < keyB ? [a, b] : [b, a];
+    setLinks((prev) => {
+      const exists = prev.some((p) => String(p.a) === String(u) && String(p.b) === String(v));
+      if (exists) return prev;
+      return [...prev, { a: u, b: v }];
+    });
+    setSelected(null);
+  };
 
   return (
     <div className="game-page">
@@ -86,18 +155,89 @@ export default function Enigme2() {
           <p>
             La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
           </p>
-          <div className="puzzle-instructions">
-            <div className="database-error">
-              <img src={errorImg} alt="Erreur base de donnees" />
+          <div className="puzzle-instructions" ref={containerRef}>
+            {/* Lignes de liaison */}
+            <svg
+              className="links-overlay"
+              width={size.w}
+              height={size.h}
+              style={{ position: "absolute", inset: 0 }}
+            >
+              {links.map((link, idx) => {
+                const p1 = positions.get(link.a);
+                const p2 = positions.get(link.b);
+                if (!p1 || !p2) return null;
+                const handleRemove = (e) => {
+                  e.stopPropagation();
+                  setLinks((prev) => prev.filter((_, i) => i !== idx));
+                };
+                const key = `${String(link.a)}-${String(link.b)}-${idx}`;
+                return (
+                  <g key={key}>
+                    {/* Large invisible hit-area for easier clicks */}
+                    <line
+                      x1={p1.x}
+                      y1={p1.y}
+                      x2={p2.x}
+                      y2={p2.y}
+                      stroke="#22c55e"
+                      strokeWidth="14"
+                      strokeOpacity="0"
+                      strokeLinecap="round"
+                      pointerEvents="stroke"
+                      style={{ cursor: "pointer" }}
+                      onClick={handleRemove}
+                    />
+                    {/* Visible line */}
+                    <line
+                      x1={p1.x}
+                      y1={p1.y}
+                      x2={p2.x}
+                      y2={p2.y}
+                      stroke="#22c55e"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      pointerEvents="none"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Ordinateurs à gauche et à droite (cliquables) */}
+            <img
+              src={computerImg}
+              alt="Ordinateur gauche"
+              className={`computer computer--left${selected === "left" ? " selected" : ""}`}
+              onClick={() => handleConnect("left")}
+            />
+            <img
+              src={computerImg}
+              alt="Ordinateur droite"
+              className={`computer computer--right${selected === "right" ? " selected" : ""}`}
+              onClick={() => handleConnect("right")}
+            />
+
+            <div className="database-error" onClick={() => handleConnect("center")}>
+              <img
+                src={errorImg}
+                alt="Erreur base de donnees"
+                className={selected === "center" ? "selected" : undefined}
+                style={{ cursor: "pointer" }}
+              />
+              {/* Icône feu en bas à gauche de la database */}
+              <img src={fireImg} alt="Feu" className="database-fire" style={{ pointerEvents: "none" }} />
             </div>
             {/* Noeuds autour */}
             {nodes.map((node) => (
               <div
                 key={node.id}
-                className="node"
+                className={`node${selected === node.id ? " node--selected" : ""}`}
                 style={{
-                  transform: `rotate(${node.angle}deg) translate(160px) rotate(-${node.angle}deg)`,
+                  transform: `translate(-50%, -50%) rotate(${node.angle}deg) translate(${(node.r ?? RADIUS)}px) rotate(-${node.angle}deg)`,
+                  cursor: "pointer",
                 }}
+                onClick={() => handleConnect(node.id)}
               >
                 <span>{node.id}</span>
               </div>
