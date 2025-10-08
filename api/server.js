@@ -29,11 +29,24 @@ const buildInitialToolsState = () =>
 
 const TERMINAL_HISTORY_LIMIT = 200;
 const ENIGME4_KEYS = ['A2', 'C3', 'D1'];
+const ENIGME3_WALLETS = ['Wallet A', 'Wallet B', 'Wallet C'];
+const ENIGME3_KEYS = ['Key1', 'Key2', 'Key3'];
+const ENIGME3_MAPPING = {
+  'Wallet A': 'Key1',
+  'Wallet B': 'Key2',
+  'Wallet C': 'Key3'
+};
 
 const buildInitialEnigme4State = () => ({
   foundKeys: [],
   wrongCells: [],
   lastSelection: null,
+  completed: false
+});
+
+const buildInitialEnigme3State = () => ({
+  selections: {},
+  feedback: {},
   completed: false
 });
 
@@ -46,6 +59,7 @@ const ensureRoom = (roomName) => {
       messages: [],
       timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
       enigmes: {},
+      enigme3: buildInitialEnigme3State(),
       enigme4: buildInitialEnigme4State(),
       startedAt: null,
       missionSummary: null,
@@ -61,6 +75,10 @@ const ensureRoom = (roomName) => {
 
   if (!rooms[roomName].tools) {
     rooms[roomName].tools = buildInitialToolsState();
+  }
+
+  if (!rooms[roomName].enigme3) {
+    rooms[roomName].enigme3 = buildInitialEnigme3State();
   }
 
   if (!rooms[roomName].enigme4) {
@@ -197,6 +215,38 @@ const assignToolsForRoom = (roomName) => {
   emitToolsUpdate(roomName);
 };
 
+const getEnigme3State = (roomState) => {
+  if (!roomState) {
+    return buildInitialEnigme3State();
+  }
+  if (!roomState.enigme3 || typeof roomState.enigme3 !== 'object') {
+    roomState.enigme3 = buildInitialEnigme3State();
+  }
+  return roomState.enigme3;
+};
+
+const resetEnigme3State = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.enigme3 = buildInitialEnigme3State();
+};
+
+const emitEnigme3State = (roomName, { targetSocket = null } = {}) => {
+  const roomState = ensureRoom(roomName);
+  const enigme3State = getEnigme3State(roomState);
+  const payload = {
+    selections: { ...enigme3State.selections },
+    feedback: { ...enigme3State.feedback },
+    completed: Boolean(enigme3State.completed)
+  };
+  if (targetSocket) {
+    targetSocket.emit('enigme3:state', payload);
+  } else {
+    io.to(roomName).emit('enigme3:state', payload);
+  }
+};
+
 const getEnigme4State = (roomState) => {
   if (!roomState) {
     return buildInitialEnigme4State();
@@ -247,6 +297,10 @@ const updateEnigmeStatusForRoom = (roomName, key, completed) => {
     return;
   }
   const roomState = ensureRoom(roomName);
+  if (normalizedKey === 'enigme3') {
+    const enigme3State = getEnigme3State(roomState);
+    enigme3State.completed = Boolean(completed);
+  }
   if (normalizedKey === 'enigme4') {
     const enigme4State = getEnigme4State(roomState);
     enigme4State.completed = Boolean(completed);
@@ -449,6 +503,7 @@ io.on('connection', (socket) => {
       sharedInput: roomState.terminal?.sharedInput ?? '',
       history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
     });
+    emitEnigme3State(trimmedRoom, { targetSocket: socket });
     emitEnigme4State(trimmedRoom, { targetSocket: socket });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
@@ -478,6 +533,99 @@ io.on('connection', (socket) => {
     const roomState = ensureRoom(room);
     roomState.messages.push(msg);
     io.to(room).emit('newMessage', msg);
+  });
+
+  socket.on('enigme3:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({ selections: {}, feedback: {}, completed: false });
+      }
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    const snapshot = {
+      selections: { ...enigme3State.selections },
+      feedback: { ...enigme3State.feedback },
+      completed: Boolean(enigme3State.completed)
+    };
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      emitEnigme3State(trimmedRoom, { targetSocket: socket });
+    }
+  });
+
+  socket.on('enigme3:assignKey', ({ room, wallet, key } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedWallet = typeof wallet === 'string' ? wallet.trim() : '';
+    const normalizedKey = typeof key === 'string' ? key.trim() : '';
+    const username = (socket.data?.username ?? '').trim();
+
+    if (!trimmedRoom || !normalizedWallet || !normalizedKey || !username) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+    if (!ENIGME3_WALLETS.includes(normalizedWallet) || !ENIGME3_KEYS.includes(normalizedKey)) {
+      callback({ ok: false, error: 'invalid_target' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    if (enigme3State.completed) {
+      callback({ ok: false, error: 'completed' });
+      return;
+    }
+
+    Object.keys(enigme3State.selections || {}).forEach((walletName) => {
+      if (enigme3State.selections[walletName] === normalizedKey && walletName !== normalizedWallet) {
+        delete enigme3State.selections[walletName];
+        delete enigme3State.feedback[walletName];
+      }
+    });
+
+    enigme3State.selections[normalizedWallet] = normalizedKey;
+    delete enigme3State.feedback[normalizedWallet];
+    emitEnigme3State(trimmedRoom);
+
+    callback({ ok: true });
+  });
+
+  socket.on('enigme3:validate', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      callback({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme3State = getEnigme3State(roomState);
+    const selections = enigme3State.selections || {};
+    const feedback = {};
+    let allCorrect = true;
+
+    ENIGME3_WALLETS.forEach((walletName) => {
+      const assigned = selections[walletName] || null;
+      if (assigned && ENIGME3_MAPPING[walletName] === assigned) {
+        feedback[walletName] = 'correct';
+      } else {
+        feedback[walletName] = assigned ? 'incorrect' : 'missing';
+        allCorrect = false;
+      }
+    });
+
+    enigme3State.feedback = feedback;
+    if (allCorrect) {
+      enigme3State.completed = true;
+      updateEnigmeStatusForRoom(trimmedRoom, 'enigme3', true);
+    } else {
+      enigme3State.completed = false;
+    }
+
+    emitEnigme3State(trimmedRoom);
+    callback({ ok: true, completed: enigme3State.completed });
   });
 
   socket.on('enigme4:requestState', ({ room } = {}, callback = () => {}) => {
@@ -573,9 +721,11 @@ io.on('connection', (socket) => {
     assignToolsForRoom(trimmedRoom);
     assignTerminalRolesForRoom(roomState);
     resetTerminalState(roomState);
+    resetEnigme3State(roomState);
     resetEnigme4State(roomState);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme3State(trimmedRoom);
     emitEnigme4State(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
@@ -601,6 +751,7 @@ io.on('connection', (socket) => {
       terminalRole: null
     }));
     resetTerminalState(roomState);
+    resetEnigme3State(roomState);
     resetEnigme4State(roomState);
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
@@ -608,6 +759,7 @@ io.on('connection', (socket) => {
     emitToolsUpdate(trimmedRoom);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme3State(trimmedRoom);
     emitEnigme4State(trimmedRoom);
   });
 
