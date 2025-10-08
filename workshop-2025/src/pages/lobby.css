@@ -1679,8 +1679,8 @@ body {
 
 /* État mauvais (croix) */
 .puzzle-cell.wrong {
-  background: linear-gradient(145deg, #6e1414, #8f0000);
-  border-color: #ff3b3b;
+  background: linear-gradient(145deg, #6e1414, #8d0e0e);
+  border-color: #f84b4b;
   animation: reveal-wrong 0.4s ease-out;
 }
 
