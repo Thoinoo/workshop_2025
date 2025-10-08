@@ -12,7 +12,7 @@ import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
 import ToolsMenu from "../components/ToolsMenu";
-import { FaKey, FaTimes } from "react-icons/fa"; // <--- ajout de la croix
+import { FaKey, FaTimes } from "react-icons/fa";
 
 export default function Enigme4() {
   const navigate = useNavigate();
@@ -22,7 +22,8 @@ export default function Enigme4() {
 
   const [foundKeys, setFoundKeys] = useState([]);
   const [wrongCells, setWrongCells] = useState([]);
-  const keyPositions = ["A2", "C3", "D1"]; // cases contenant les clés
+  const [clickedCell, setClickedCell] = useState(null);
+  const keyPositions = ["A2", "C3", "D1"];
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -36,44 +37,44 @@ export default function Enigme4() {
     }
   }, [location.pathname, missionFailed, navigate]);
 
-const handleCellClick = (pos) => {
-  if (!missionStarted || isCompleted || !room) return;
-  if (foundKeys.includes(pos) || wrongCells.includes(pos)) return; // ← remplacé cellState
+  const handleCellClick = (pos) => {
+    if (!missionStarted || isCompleted || !room) return;
+    if (foundKeys.includes(pos) || wrongCells.includes(pos)) return;
 
-  if (keyPositions.includes(pos)) {
-    setFoundKeys((prev) => [...prev, pos]);
+    setClickedCell(pos);
 
-    if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
-      setEnigmeStatus(room, "enigme4", true);
-      socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+    if (keyPositions.includes(pos)) {
+      setFoundKeys((prev) => [...prev, pos]);
+
+      if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
+        // ✅ Marquer comme terminée
+        setEnigmeStatus(room, "enigme4", true);
+        socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+
+        // 🕒 Stopper le timer pour tout le monde
+        socket.emit("stopTimer", { room });
+      }
+    } else {
+      setWrongCells((prev) => [...prev, pos]);
+      const factor = (wrongCells.length + 1) * 2;
+      socket.emit("accelerateTimer", { room, factor });
+      socket.emit("chatMessage", {
+        room,
+        username: "SYSTEM",
+        message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`,
+      });
     }
-  } else {
-    setWrongCells((prev) => [...prev, pos]);
 
-    const factor = (wrongCells.length + 1) * 2; // 1ère mauvaise = x2, 2ème = x4, 3ème = x6
-    socket.emit("accelerateTimer", { room, factor });
-
-    socket.emit("chatMessage", {
-      room,
-      username: "SYSTEM",
-      message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`
-    });
-  }
-};
-
+    setTimeout(() => setClickedCell(null), 300);
+  };
 
   useEffect(() => {
     if (foundKeys.length === keyPositions.length && !isCompleted) {
       setEnigmeStatus(room, "enigme4", true);
       socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
+      socket.emit("stopTimer", { room }); // stop du timer
     }
   }, [foundKeys, isCompleted, room]);
-
-  const handleDebugComplete = () => {
-    if (!room || isCompleted) return;
-    setEnigmeStatus(room, "enigme4", true);
-    socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-  };
 
   const letters = ["A", "B", "C", "D"];
   const numbers = [1, 2, 3, 4];
@@ -81,7 +82,6 @@ const handleCellClick = (pos) => {
 
   return (
     <div className="game-page">
-      {/* HEADER inchangé */}
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu active="enigme4" room={room} />
@@ -95,34 +95,36 @@ const handleCellClick = (pos) => {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-          {!isCompleted ? (
-            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
-              Valider l énigme (debug)
-            </button>
-          ) : null}
         </div>
       </header>
 
-      {/* CONTENU ENIGME */}
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 4</h2>
-          <p>Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet.</p>
+          <p>
+            Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
+            Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />
+            <strong>[ATTENTION]</strong> Cliquer sur une mauvaise case augmente la vitesse de
+            réduction de BTC. Comme quoi une erreur est vite arrivée...
+          </p>
 
           <div className="puzzle-grid">
             {cells.map((cell) => {
               const isKey = foundKeys.includes(cell);
               const isWrong = wrongCells.includes(cell);
+              const isClicked = clickedCell === cell;
               return (
                 <div
                   key={cell}
-                  className={`puzzle-cell ${isKey ? "found" : ""} ${isWrong ? "wrong" : ""}`}
+                  className={`puzzle-cell ${isKey ? "found" : ""} ${
+                    isWrong ? "wrong" : ""
+                  } ${isClicked ? "clicked" : ""}`}
                   onClick={() => handleCellClick(cell)}
                 >
                   {isKey ? (
-                    <FaKey className="key-icon" />
+                    <FaKey className="icon key-icon" />
                   ) : isWrong ? (
-                    <FaTimes className="wrong-icon" />
+                    <FaTimes className="icon wrong-icon" />
                   ) : (
                     cell
                   )}

@@ -3,18 +3,29 @@ import useRoomState from "../hooks/useRoomState";
 import "../styles/components_css/BombeTimer.css";
 
 export default function BombeTimer({ remainingSeconds = null }) {
-
   const isNumeric = Number.isFinite(remainingSeconds);
 
   const [randomSuffix, setRandomSuffix] = useState("");
   const shouldAnimate = isNumeric && remainingSeconds > 0;
   const { missionStarted } = useRoomState();
-  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const TUTORIAL_STORAGE_KEY = "timerTutorialDismissedMission";
+  const [dismissedMissionId, setDismissedMissionId] = useState(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return window.sessionStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
   const [showTutorial, setShowTutorial] = useState(false);
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
-    setTutorialDismissed(true);
+    if (typeof window !== "undefined") {
+      const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+      if (missionId) {
+        window.sessionStorage.setItem(TUTORIAL_STORAGE_KEY, missionId);
+        setDismissedMissionId(missionId);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -23,11 +34,8 @@ export default function BombeTimer({ remainingSeconds = null }) {
       return;
     }
 
-    // Rotate random digits quickly to mimic sub-decimal countdown noise.
     const interval = setInterval(() => {
-      const digits = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
+      const digits = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
       setRandomSuffix(digits);
     }, 50);
 
@@ -36,14 +44,17 @@ export default function BombeTimer({ remainingSeconds = null }) {
 
   useEffect(() => {
     if (!missionStarted) {
-      setTutorialDismissed(false);
       setShowTutorial(false);
       return;
     }
-    if (!tutorialDismissed) {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+    if (missionId && missionId !== dismissedMissionId) {
       setShowTutorial(true);
     }
-  }, [missionStarted, tutorialDismissed]);
+  }, [missionStarted, dismissedMissionId]);
 
   const firstDecimalValue = isNumeric
     ? remainingSeconds <= 0
@@ -51,7 +62,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
       : (Math.floor(remainingSeconds * 10) / 10).toFixed(1)
     : null;
 
-  const formattedTime =  isNumeric
+  const formattedTime = isNumeric
     ? `${firstDecimalValue}${shouldAnimate && randomSuffix ? randomSuffix : ""} BTC`
     : "0 BTC";
 

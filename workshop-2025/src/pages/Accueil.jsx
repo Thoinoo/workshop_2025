@@ -198,20 +198,19 @@ export default function Accueil() {
         </section>
 
         <aside className="chat-panel">
-          <div className="puzzle-instructions">
+          {/* <div className="puzzle-instructions">
             <h3>Briefing express</h3>
             <ul>
               <li>Verifiez votre micro et votre connexion avant d'entrer.</li>
               <li>Partagez le code de salle a chaque membre de l'equipe.</li>
               <li>Le chronometre ne partira qu'une fois la mission lancee.</li>
             </ul>
-          </div>
+          </div> */}
 
           <div className="lobby-insight">
-            <h3>Astuce</h3>
+            {/* <h3>Astuce</h3> */}
             <p>
-              En tant qu'hote, vous pourrez attendre vos coequipiers sur l'ecran de prepartie avant
-              de lancer le compteur.
+              Devenez les meilleurs agents !
             </p>
           </div>
 

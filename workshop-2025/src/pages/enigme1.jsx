@@ -80,14 +80,7 @@ export default function Enigme1() {
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <p className="game-username">
-            {username ? (
-              <>
-                Agent <strong>{username}</strong>, decryptez les indices pour progresser vers la
-                prochaine etape.
-              </>
-            ) : (
-              "Preparez-vous a resoudre la premiere enigme."
-            )}
+            
           </p>
           <h2>Bloc Genesis</h2>
           {isCompleted ? (
@@ -126,10 +119,6 @@ export default function Enigme1() {
               </div>
             </article>
           ) : null}
-            <p>
-              Observez attentivement les elements fournis par votre maitre du jeu. Chaque detail
-              compte et l'echange d'idees avec votre equipe sera determinant.
-            </p>
 
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
@@ -139,15 +128,13 @@ export default function Enigme1() {
               peut etre verifiee et l historique se desintegre.
             </p>
             <p>
-              Devant vous se trouve un terminal securise, dernier point d acces fiable. Satoshi y a
-              laisse une piste. Votre mission est de retrouver le Bloc Genesis, d extraire le
-              message cache et de confirmer son integrite pour relancer la chaine.
+              Trouvez et réparez le block Genesis !
             </p>
-            <p>
+            {/* <p>
               Utilisez le terminal et tapez <code>help</code> si besoin. Gardez ces commandes a
               portee de main :
-            </p>
-            <ul>
+            </p> */}
+            {/* <ul>
               <li>
                 <code>ls</code> : explorer les repertoires disponibles
               </li>
@@ -164,7 +151,7 @@ export default function Enigme1() {
             <p>
               Fouillez le dossier <code>genesis/</code>, identifiez le bon fichier, decodez les
               indices et prouvez que le Bloc Genesis est authentique.
-            </p>
+            </p> */}
           </div>
 
           <GenesisTerminal />
