@@ -22,8 +22,8 @@ export default function Enigme4() {
 
   const [foundKeys, setFoundKeys] = useState([]);
   const [wrongCells, setWrongCells] = useState([]);
+  const [lastSelection, setLastSelection] = useState(null);
   const [clickedCell, setClickedCell] = useState(null);
-  const keyPositions = ["A2", "C3", "D1"];
 
   // ✅ Bouton debug pour valider l'énigme
   const handleDebugComplete = () => {
@@ -45,41 +45,60 @@ export default function Enigme4() {
     }
   }, [location.pathname, missionFailed, navigate]);
 
+  useEffect(() => {
+    if (!room) {
+      setFoundKeys([]);
+      setWrongCells([]);
+      setLastSelection(null);
+      return () => {};
+    }
+
+    let canceled = false;
+
+    const applySharedState = (payload = {}) => {
+      if (canceled) {
+        return;
+      }
+
+      const nextFound = Array.isArray(payload.foundKeys) ? payload.foundKeys : [];
+      const nextWrong = Array.isArray(payload.wrongCells) ? payload.wrongCells : [];
+
+      setFoundKeys(nextFound);
+      setWrongCells(nextWrong);
+      setLastSelection(payload.lastSelection ?? null);
+
+      if (typeof payload.completed === "boolean") {
+        setEnigmeStatus(room, "enigme4", payload.completed);
+      }
+    };
+
+    socket.on("enigme4:state", applySharedState);
+    socket.emit("enigme4:requestState", { room }, (initialState) => {
+      applySharedState(initialState || {});
+    });
+
+    return () => {
+      canceled = true;
+      socket.off("enigme4:state", applySharedState);
+    };
+  }, [room]);
+
+  useEffect(() => {
+    if (!lastSelection || !lastSelection.cell) {
+      return;
+    }
+
+    setClickedCell(lastSelection.cell);
+    const timeoutId = setTimeout(() => setClickedCell(null), 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [lastSelection]);
+
   const handleCellClick = (pos) => {
     if (!missionStarted || isCompleted || !room) return;
     if (foundKeys.includes(pos) || wrongCells.includes(pos)) return;
-
-    setClickedCell(pos);
-
-    if (keyPositions.includes(pos)) {
-      setFoundKeys((prev) => [...prev, pos]);
-
-      if (foundKeys.length + 1 >= keyPositions.length && !isCompleted) {
-        setEnigmeStatus(room, "enigme4", true);
-        socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-        socket.emit("stopTimer", { room });
-      }
-    } else {
-      setWrongCells((prev) => [...prev, pos]);
-      const factor = (wrongCells.length + 1) * 2;
-      socket.emit("accelerateTimer", { room, factor });
-      socket.emit("chatMessage", {
-        room,
-        username: "SYSTEM",
-        message: `⚠️ Mauvaise case (${pos}) — vitesse x${factor}`,
-      });
-    }
-
-    setTimeout(() => setClickedCell(null), 300);
+    socket.emit("enigme4:selectCell", { room, cell: pos });
   };
-
-  useEffect(() => {
-    if (foundKeys.length === keyPositions.length && !isCompleted) {
-      setEnigmeStatus(room, "enigme4", true);
-      socket.emit("enigmeStatusUpdate", { room, key: "enigme4", completed: true });
-      socket.emit("stopTimer", { room });
-    }
-  }, [foundKeys, isCompleted, room]);
 
   const letters = ["A", "B", "C", "D"];
   const numbers = [1, 2, 3, 4];

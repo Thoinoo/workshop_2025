@@ -27,6 +27,14 @@ const buildInitialToolsState = () =>
   }, {});
 
 const TERMINAL_HISTORY_LIMIT = 200;
+const ENIGME4_KEYS = ['A2', 'C3', 'D1'];
+
+const buildInitialEnigme4State = () => ({
+  foundKeys: [],
+  wrongCells: [],
+  lastSelection: null,
+  completed: false
+});
 
 let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene, terminalRole }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } }, terminalRoles: { [username]: 'operator'|'observer' }, terminal: { sharedInput: string, history: Array<{ command: string, outputs: string[] }> } } }
 
@@ -37,6 +45,7 @@ const ensureRoom = (roomName) => {
       messages: [],
       timer: { remaining: ROOM_DURATION_SECONDS, interval: null, started: false },
       enigmes: {},
+      enigme4: buildInitialEnigme4State(),
       startedAt: null,
       missionSummary: null,
       missionFailed: false,
@@ -51,6 +60,10 @@ const ensureRoom = (roomName) => {
 
   if (!rooms[roomName].tools) {
     rooms[roomName].tools = buildInitialToolsState();
+  }
+
+  if (!rooms[roomName].enigme4) {
+    rooms[roomName].enigme4 = buildInitialEnigme4State();
   }
 
   return rooms[roomName];
@@ -183,12 +196,60 @@ const assignToolsForRoom = (roomName) => {
   emitToolsUpdate(roomName);
 };
 
+const getEnigme4State = (roomState) => {
+  if (!roomState) {
+    return buildInitialEnigme4State();
+  }
+  if (!roomState.enigme4 || typeof roomState.enigme4 !== 'object') {
+    roomState.enigme4 = buildInitialEnigme4State();
+  }
+  return roomState.enigme4;
+};
+
+const resetEnigme4State = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.enigme4 = buildInitialEnigme4State();
+};
+
+const emitEnigme4State = (roomName, { targetSocket = null } = {}) => {
+  const roomState = ensureRoom(roomName);
+  const enigme4State = getEnigme4State(roomState);
+  const payload = {
+    foundKeys: [...enigme4State.foundKeys],
+    wrongCells: [...enigme4State.wrongCells],
+    lastSelection: enigme4State.lastSelection ? { ...enigme4State.lastSelection } : null,
+    completed: Boolean(enigme4State.completed)
+  };
+  if (targetSocket) {
+    targetSocket.emit('enigme4:state', payload);
+  } else {
+    io.to(roomName).emit('enigme4:state', payload);
+  }
+};
+
+const appendSystemMessage = (roomName, message) => {
+  const sanitizedMessage = typeof message === 'string' ? message : '';
+  if (!sanitizedMessage.trim()) {
+    return;
+  }
+  const roomState = ensureRoom(roomName);
+  const entry = { username: 'SYSTEM', message: sanitizedMessage };
+  roomState.messages.push(entry);
+  io.to(roomName).emit('newMessage', entry);
+};
+
 const updateEnigmeStatusForRoom = (roomName, key, completed) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
   if (!normalizedKey) {
     return;
   }
   const roomState = ensureRoom(roomName);
+  if (normalizedKey === 'enigme4') {
+    const enigme4State = getEnigme4State(roomState);
+    enigme4State.completed = Boolean(completed);
+  }
   roomState.enigmes[normalizedKey] = Boolean(completed);
   const enigmeStatuses = Object.values(roomState.enigmes);
   const allSolved = enigmeStatuses.length > 0 && enigmeStatuses.every(Boolean);
@@ -257,6 +318,20 @@ const startTimerForRoom = (roomName, { reset = false } = {}) => {
 
   io.to(roomName).emit("timerUpdate", room.timer.remaining);
   return room.timer.remaining;
+};
+
+const setTimerSpeedForRoom = (roomName, factor) => {
+  const roomState = ensureRoom(roomName);
+  if (!roomState?.timer) {
+    return;
+  }
+
+  const speedFactor = Number.isFinite(Number(factor)) ? Math.max(1, Number(factor)) : 1;
+  roomState.timer.speedMultiplier = speedFactor;
+
+  if (!roomState.timer.started) {
+    startTimerForRoom(roomName, { reset: true });
+  }
 };
 
 
@@ -373,6 +448,7 @@ io.on('connection', (socket) => {
       sharedInput: roomState.terminal?.sharedInput ?? '',
       history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
     });
+    emitEnigme4State(trimmedRoom, { targetSocket: socket });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
     }
@@ -403,6 +479,87 @@ io.on('connection', (socket) => {
     io.to(room).emit('newMessage', msg);
   });
 
+  socket.on('enigme4:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({
+          foundKeys: [],
+          wrongCells: [],
+          lastSelection: null,
+          completed: false
+        });
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const state = getEnigme4State(roomState);
+    const snapshot = {
+      foundKeys: [...state.foundKeys],
+      wrongCells: [...state.wrongCells],
+      lastSelection: state.lastSelection ? { ...state.lastSelection } : null,
+      completed: Boolean(state.completed)
+    };
+
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+    }
+  });
+
+  socket.on('enigme4:selectCell', ({ room, cell } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const normalizedCell =
+      typeof cell === 'string' && cell.trim().length ? cell.trim().toUpperCase() : '';
+
+    if (!trimmedRoom || !normalizedCell) {
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme4State = getEnigme4State(roomState);
+
+    if (enigme4State.completed) {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    if (
+      enigme4State.foundKeys.includes(normalizedCell) ||
+      enigme4State.wrongCells.includes(normalizedCell)
+    ) {
+      emitEnigme4State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    const timestamp = Date.now();
+    const isKey = ENIGME4_KEYS.includes(normalizedCell);
+
+    if (isKey) {
+      enigme4State.foundKeys.push(normalizedCell);
+      enigme4State.lastSelection = { cell: normalizedCell, type: 'key', ts: timestamp };
+
+      if (enigme4State.foundKeys.length >= ENIGME4_KEYS.length) {
+        enigme4State.completed = true;
+        updateEnigmeStatusForRoom(trimmedRoom, 'enigme4', true);
+      }
+    } else {
+      enigme4State.wrongCells.push(normalizedCell);
+      enigme4State.lastSelection = { cell: normalizedCell, type: 'wrong', ts: timestamp };
+
+      const factor = enigme4State.wrongCells.length * 2;
+      setTimerSpeedForRoom(trimmedRoom, factor);
+      appendSystemMessage(
+        trimmedRoom,
+        `Alerte: Mauvaise case (${normalizedCell}) - vitesse x${factor}`
+      );
+    }
+
+    emitEnigme4State(trimmedRoom);
+  });
+
   socket.on('startMission', ({ room }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -415,8 +572,10 @@ io.on('connection', (socket) => {
     assignToolsForRoom(trimmedRoom);
     assignTerminalRolesForRoom(roomState);
     resetTerminalState(roomState);
+    resetEnigme4State(roomState);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme4State(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
@@ -441,12 +600,14 @@ io.on('connection', (socket) => {
       terminalRole: null
     }));
     resetTerminalState(roomState);
+    resetEnigme4State(roomState);
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
     emitToolsUpdate(trimmedRoom);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
+    emitEnigme4State(trimmedRoom);
   });
 
   socket.on('terminal:requestState', ({ room } = {}, callback = () => {}) => {
@@ -678,19 +839,16 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('leaderboardEntryRecorded', entry ?? null);
   });
 
-socket.on("accelerateTimer", ({ room, factor } = {}) => {
-  const roomState = rooms[room];
-  if (!roomState || !roomState.timer) return;
+  socket.on('accelerateTimer', ({ room, factor } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
 
-  const speedFactor = Number(factor) || 1;
-  roomState.timer.speedMultiplier = speedFactor;
+    const speedFactor = Number.isFinite(Number(factor)) ? Math.max(1, Number(factor)) : 1;
+    setTimerSpeedForRoom(trimmedRoom, speedFactor);
 
-  console.log(`Timer for room "${room}" accelerated x${speedFactor}`);
-
-  // Si le timer n'est pas encore lancé, le démarrer
-  if (!roomState.timer.started) {
-    startTimerForRoom(room, { reset: true });
-  }
+    console.log(`Timer for room "${trimmedRoom}" accelerated x${speedFactor}`);
 });
 
   socket.on('disconnect', () => {
@@ -726,4 +884,5 @@ app.post('/api/leaderboard', (req, res) => {
 });
 
 server.listen(PORT, () => console.log(`API sur http://localhost:${PORT}`));
+
 
