@@ -24,6 +24,7 @@ export default function Enigme2() {
   const isCompleted = useEnigmeCompletion("enigme2", room);
   const [selected, setSelected] = useState(null); // null | number | 'center'
   const [links, setLinks] = useState([]); // array of { a: id, b: id }
+  const [initialized, setInitialized] = useState(false);
   const containerRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -118,6 +119,56 @@ export default function Enigme2() {
     });
     setSelected(null);
   };
+  
+  // Charger les liens sauvegardés pour la salle courante
+  useEffect(() => {
+    if (!room) return;
+    try {
+      const raw = localStorage.getItem(`enigme2:links:${room}`);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          setLinks(arr.map((l) => ({ a: String(l.a), b: String(l.b) })));
+        } else {
+          setLinks([]);
+        }
+      } else {
+        setLinks([]);
+      }
+    } catch (_e) {
+      setLinks([]);
+    }
+    setInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room]);
+
+  // Persister les liens quand ils changent
+  useEffect(() => {
+    if (!initialized || !room) return;
+    try {
+      localStorage.setItem(`enigme2:links:${room}`, JSON.stringify(links));
+    } catch (_e) {
+      // ignore quota errors
+    }
+  }, [links, room, initialized]);
+
+  // Lier automatiquement les ordinateurs à la database au premier démarrage (si absent)
+  useEffect(() => {
+    if (!initialized) return;
+    setLinks((prev) => {
+      const hasLeft = prev.some(
+        (p) => (String(p.a) === 'center' && String(p.b) === 'left') || (String(p.a) === 'left' && String(p.b) === 'center')
+      );
+      const hasRight = prev.some(
+        (p) => (String(p.a) === 'center' && String(p.b) === 'right') || (String(p.a) === 'right' && String(p.b) === 'center')
+      );
+      if (hasLeft && hasRight) return prev;
+      const next = [...prev];
+      if (!hasLeft) next.push({ a: 'center', b: 'left' });
+      if (!hasRight) next.push({ a: 'center', b: 'right' });
+      return next;
+    });
+  }, [initialized]);
 
   return (
     <div className="game-page">
