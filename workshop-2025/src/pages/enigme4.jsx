@@ -104,7 +104,7 @@ export default function Enigme4() {
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Enigme 4</h2>
-          <p>Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. Avez vous été attentifs aux épreuves que vous avez traversées jusqu'à maintenant ?<br></br> [ATTENTION] Cliquer sur une mauvaise case augmente la vitesse de réduction de BTC. Comme quoi une erreur est vite arrivée.</p>
+          <p>Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. Avez vous été attentifs aux épreuves que vous avez traversées jusqu'à maintenant ?<br></br> [ATTENTION] Cliquer sur une mauvaise case augmente la vitesse de réduction de BTC. Comme quoi une erreur est vite arrivée...</p>
 
           <div className="puzzle-grid">
             {cells.map((cell) => {
