@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "../styles/components_css/BombeTimer.css";
 
 export default function BombeTimer({ remainingSeconds = null }) {
 
