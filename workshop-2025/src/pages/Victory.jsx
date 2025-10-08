@@ -200,7 +200,7 @@ export default function Victory() {
         </div>
 
         <div className="game-header-section game-header-section--actions">
-          <button className="game-secondary" onClick={() => navigate("/lobby")}>
+          <button className="game-secondary" onClick={() => navigate("/")}>
             Retour au QG
           </button>
           {isHost ? (
