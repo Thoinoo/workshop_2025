@@ -66,6 +66,24 @@ export default function Victory() {
     [missionElapsedSeconds]
   );
 
+  const bitcoinsRemaining = useMemo(() => {
+    if (
+      latestLeaderboardEntry &&
+      typeof latestLeaderboardEntry.bitcoinsRemaining === "number"
+    ) {
+      return latestLeaderboardEntry.bitcoinsRemaining;
+    }
+    return 21_000_000;
+  }, [latestLeaderboardEntry]);
+
+  const formattedBitcoinsRemaining = useMemo(
+    () =>
+      typeof bitcoinsRemaining === "number"
+        ? bitcoinsRemaining.toLocaleString("fr-FR")
+        : "—",
+    [bitcoinsRemaining]
+  );
+
   const teamName = useMemo(() => buildTeamName(currentPlayers, room), [currentPlayers, room]);
 
   const fetchLeaderboard = useCallback(async () => {
@@ -222,6 +240,10 @@ export default function Victory() {
             <div className="victory-metric">
               <span className="victory-metric__label">Temps total</span>
               <span className="victory-metric__value">{formattedTime}</span>
+            </div>
+            <div className="victory-metric">
+              <span className="victory-metric__label">Bitcoins restants</span>
+              <span className="victory-metric__value">{formattedBitcoinsRemaining}</span>
             </div>
             <div className="victory-metric">
               <span className="victory-metric__label">Statut</span>
