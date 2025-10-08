@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useRoomState from "../hooks/useRoomState";
 import { TOOL_IDS, TOOL_LIST } from "../constants/tools";
 import "../styles/tools-menu.css";
@@ -30,11 +30,19 @@ const removeKey = (object, key) => {
 };
 
 export default function ToolsMenu() {
-  const { username, tools, useFileFixer } = useRoomState();
+  const { username, tools, useFileFixer, missionStarted } = useRoomState();
   const [isOpen, setIsOpen] = useState(false);
   const [toolFeedback, setToolFeedback] = useState({});
   const [pendingUse, setPendingUse] = useState({});
   const [fileFixerInput, setFileFixerInput] = useState("");
+  const TUTORIAL_STORAGE_KEY = "toolsTutorialDismissedMission";
+  const [dismissedMissionId, setDismissedMissionId] = useState(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return window.sessionStorage.getItem(TUTORIAL_STORAGE_KEY);
+  });
+  const [showTutorial, setShowTutorial] = useState(false);
   const containerRef = useRef(null);
 
   const toolStates = useMemo(
@@ -48,6 +56,17 @@ export default function ToolsMenu() {
   );
   const fileFixerFeedback = toolFeedback[TOOL_IDS.FILE_FIXER];
   const fileFixerPending = Boolean(pendingUse[TOOL_IDS.FILE_FIXER]);
+
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    if (typeof window !== "undefined") {
+      const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+      if (missionId) {
+        window.sessionStorage.setItem(TUTORIAL_STORAGE_KEY, missionId);
+        setDismissedMissionId(missionId);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -90,8 +109,25 @@ export default function ToolsMenu() {
     setToolFeedback((prev) => removeKey(prev, TOOL_IDS.FILE_FIXER));
   }, [isFileFixerHolder]);
 
+  useEffect(() => {
+    if (!missionStarted) {
+      setShowTutorial(false);
+      return;
+    }
+    if (typeof window === "undefined") {
+      return;
+    }
+    const missionId = window.sessionStorage.getItem("missionStartTimestamp");
+    if (missionId && missionId !== dismissedMissionId) {
+      setShowTutorial(true);
+    }
+  }, [missionStarted, dismissedMissionId]);
+
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
+    if (showTutorial) {
+      dismissTutorial();
+    }
   };
 
   const handleFileFixerSubmit = async (event) => {
@@ -205,7 +241,12 @@ export default function ToolsMenu() {
   };
 
   return (
-    <div className={`tools-menu ${isOpen ? "is-open" : ""}`} ref={containerRef}>
+    <div
+      className={`tools-menu ${isOpen ? "is-open" : ""} ${
+        showTutorial ? "tools-menu--highlight" : ""
+      }`}
+      ref={containerRef}
+    >
       <button
         type="button"
         className="game-secondary tools-menu__toggle"
@@ -214,6 +255,22 @@ export default function ToolsMenu() {
       >
         <img src={toolsMenuIllustration} alt="Illustration du panneau d'outils" className="tools-menu__illustration" />
       </button>
+      {showTutorial ? (
+        <aside className="tools-menu__tutorial" role="dialog" aria-live="polite">
+          <p className="tools-menu__tutorial-text">
+            QG - Acces prioritaire debloque : vos outils ont ete glisses dans le terminal.
+            Utilisez-les vite pour stabiliser la mission.
+          </p>
+          <button
+            type="button"
+            className="tools-menu__tutorial-close"
+            aria-label="Fermer le tutoriel des outils"
+            onClick={dismissTutorial}
+          >
+            OK
+          </button>
+        </aside>
+      ) : null}
       <div className="tools-menu__panel" aria-hidden={isOpen ? "false" : "true"}>
         <header className="tools-menu__header">
           
@@ -237,6 +294,3 @@ export default function ToolsMenu() {
     </div>
   );
 }
-
-
-

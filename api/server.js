@@ -26,7 +26,9 @@ const buildInitialToolsState = () =>
     return acc;
   }, {});
 
-let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } } } }
+const TERMINAL_HISTORY_LIMIT = 200;
+
+let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene, terminalRole }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } }, terminalRoles: { [username]: 'operator'|'observer' }, terminal: { sharedInput: string, history: Array<{ command: string, outputs: string[] }> } } }
 
 const ensureRoom = (roomName) => {
   if (!rooms[roomName]) {
@@ -38,7 +40,12 @@ const ensureRoom = (roomName) => {
       startedAt: null,
       missionSummary: null,
       missionFailed: false,
-      tools: buildInitialToolsState()
+      tools: buildInitialToolsState(),
+      terminalRoles: {},
+      terminal: {
+        sharedInput: '',
+        history: []
+      }
     };
   }
 
@@ -48,6 +55,87 @@ const ensureRoom = (roomName) => {
 
   return rooms[roomName];
 };
+
+const resetTerminalState = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.terminal = {
+    sharedInput: '',
+    history: []
+  };
+};
+
+const sanitizePlayerList = (players = []) =>
+  (players || []).filter(
+    (player) => player && typeof player.username === 'string' && player.username.trim().length
+  );
+
+const assignTerminalRolesForRoom = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+
+  const players = sanitizePlayerList(roomState.players);
+
+  if (!players.length) {
+    roomState.terminalRoles = {};
+    return;
+  }
+
+  if (players.length === 1) {
+    const username = players[0].username.trim();
+    roomState.terminalRoles = { [username]: 'operator' };
+  } else {
+    const shuffled = players
+      .map((player) => ({
+        player,
+        sort: Math.random()
+      }))
+      .sort((a, b) => a.sort - b.sort)
+      .map((entry) => entry.player);
+
+    const operatorCount = Math.max(1, Math.ceil(shuffled.length / 2));
+    roomState.terminalRoles = {};
+
+    shuffled.forEach((player, index) => {
+      const role = index < operatorCount ? 'operator' : 'observer';
+      roomState.terminalRoles[player.username.trim()] = role;
+    });
+  }
+
+  roomState.players = players.map((player) => ({
+    ...player,
+    terminalRole: roomState.terminalRoles[player.username.trim()] ?? null
+  }));
+};
+
+const emitTerminalState = (roomName) => {
+  const roomState = rooms[roomName];
+  if (!roomState) {
+    return;
+  }
+  io.to(roomName).emit('terminal:state', {
+    sharedInput: roomState.terminal?.sharedInput ?? '',
+    history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
+  });
+};
+
+const broadcastPlayersUpdate = (roomName) => {
+  const roomState = rooms[roomName];
+  if (!roomState) {
+    return;
+  }
+  io.to(roomName).emit('playersUpdate', roomState.players);
+};
+
+const isOperatorForRoom = (roomState, username) =>
+  Boolean(
+    roomState &&
+      roomState.terminalRoles &&
+      typeof username === 'string' &&
+      roomState.terminalRoles[username] === 'operator'
+  );
 
 const emitToolsUpdate = (roomName) => {
   const roomState = rooms[roomName];
@@ -207,6 +295,9 @@ const leaveRoom = (socket, roomName) => {
   let toolsUpdated = false;
   if (socket.data?.username) {
     room.players = room.players.filter((player) => player.username !== socket.data.username);
+    if (room.terminalRoles) {
+      delete room.terminalRoles[socket.data.username];
+    }
     toolsUpdated = releaseToolsForUsername(room, socket.data.username) || toolsUpdated;
     if (room.timer.started && room.players.length) {
       assignToolsToPlayers(room);
@@ -224,9 +315,15 @@ const leaveRoom = (socket, roomName) => {
   if (!room.players.length && !room.messages.length) {
     delete rooms[roomName];
   } else {
+    if (room.timer.started && room.players.length) {
+      assignTerminalRolesForRoom(room);
+    }
     io.to(roomName).emit('playersUpdate', room.players);
     if (toolsUpdated) {
       emitToolsUpdate(roomName);
+    }
+    if (room.timer.started) {
+      emitTerminalState(roomName);
     }
   }
 };
@@ -263,7 +360,8 @@ io.on('connection', (socket) => {
     roomState.players.push({
       username: trimmedUsername,
       avatar: sanitizedAvatar,
-      scene: existingPlayer?.scene ?? null
+      scene: existingPlayer?.scene ?? null,
+      terminalRole: roomState.terminalRoles[trimmedUsername] ?? existingPlayer?.terminalRole ?? null
     });
 
     io.to(trimmedRoom).emit('playersUpdate', roomState.players);
@@ -271,6 +369,10 @@ io.on('connection', (socket) => {
     socket.emit('timerUpdate', timerValue);
     socket.emit('enigmesProgressSync', { ...roomState.enigmes });
     socket.emit('toolsUpdate', { ...roomState.tools });
+    socket.emit('terminal:state', {
+      sharedInput: roomState.terminal?.sharedInput ?? '',
+      history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
+    });
     if (roomState.timer.started) {
       socket.emit('missionStarted');
     }
@@ -283,7 +385,12 @@ io.on('connection', (socket) => {
       missionFailed: roomState.missionFailed,
       missionSummary: roomState.missionSummary ? { ...roomState.missionSummary } : null,
       enigmes: { ...roomState.enigmes },
-      tools: { ...roomState.tools }
+      tools: { ...roomState.tools },
+      terminal: {
+        sharedInput: roomState.terminal?.sharedInput ?? '',
+        history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
+      },
+      terminalRoles: { ...roomState.terminalRoles }
     });
 
     console.log(`${trimmedUsername} a rejoint la salle ${trimmedRoom}`);
@@ -306,6 +413,10 @@ io.on('connection', (socket) => {
     const shouldReset = !roomState.timer.started;
     const timerValue = startTimerForRoom(trimmedRoom, { reset: shouldReset });
     assignToolsForRoom(trimmedRoom);
+    assignTerminalRolesForRoom(roomState);
+    resetTerminalState(roomState);
+    broadcastPlayersUpdate(trimmedRoom);
+    emitTerminalState(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
@@ -324,10 +435,143 @@ io.on('connection', (socket) => {
     roomState.missionSummary = null;
     roomState.missionFailed = false;
     roomState.tools = buildInitialToolsState();
+    roomState.terminalRoles = {};
+    roomState.players = roomState.players.map((player) => ({
+      ...player,
+      terminalRole: null
+    }));
+    resetTerminalState(roomState);
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
     emitToolsUpdate(trimmedRoom);
+    broadcastPlayersUpdate(trimmedRoom);
+    emitTerminalState(trimmedRoom);
+  });
+
+  socket.on('terminal:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({ sharedInput: '', history: [] });
+      }
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    const snapshot = {
+      sharedInput: roomState.terminal?.sharedInput ?? '',
+      history: Array.isArray(roomState.terminal?.history) ? roomState.terminal.history : []
+    };
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      socket.emit('terminal:state', snapshot);
+    }
+  });
+
+  socket.on('terminal:input', ({ room, text } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    if (!isOperatorForRoom(roomState, username)) {
+      return;
+    }
+    const sanitizedText =
+      typeof text === 'string' ? text.slice(0, 512) : '';
+    roomState.terminal.sharedInput = sanitizedText;
+    io.to(trimmedRoom).emit('terminal:inputUpdate', { text: sanitizedText });
+  });
+
+  socket.on('terminal:execute', ({ room, command, outputs } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'invalid_payload' });
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    if (!isOperatorForRoom(roomState, username)) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'forbidden' });
+      }
+      return;
+    }
+
+    const sanitizedCommand = typeof command === 'string' ? command.trim() : '';
+    if (!sanitizedCommand) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'empty_command' });
+      }
+      return;
+    }
+
+    const sanitizedOutputs = Array.isArray(outputs)
+      ? outputs
+          .map((line) =>
+            typeof line === 'string' ? line : String(line ?? '')
+          )
+          .slice(0, 50)
+      : [];
+
+    if (!Array.isArray(roomState.terminal?.history)) {
+      roomState.terminal.history = [];
+    }
+
+    roomState.terminal.history.push({
+      command: sanitizedCommand,
+      outputs: sanitizedOutputs
+    });
+
+    if (roomState.terminal.history.length > TERMINAL_HISTORY_LIMIT) {
+      roomState.terminal.history.splice(
+        0,
+        roomState.terminal.history.length - TERMINAL_HISTORY_LIMIT
+      );
+    }
+
+    roomState.terminal.sharedInput = '';
+
+    io.to(trimmedRoom).emit('terminal:commandExecuted', {
+      command: sanitizedCommand,
+      outputs: sanitizedOutputs
+    });
+    io.to(trimmedRoom).emit('terminal:inputUpdate', { text: '' });
+
+    if (typeof callback === 'function') {
+      callback({ ok: true });
+    }
+  });
+
+  socket.on('terminal:clear', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const username = (socket.data?.username ?? '').trim();
+    if (!trimmedRoom || !username) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'invalid_payload' });
+      }
+      return;
+    }
+    const roomState = ensureRoom(trimmedRoom);
+    if (!isOperatorForRoom(roomState, username)) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'forbidden' });
+      }
+      return;
+    }
+
+    resetTerminalState(roomState);
+    io.to(trimmedRoom).emit('terminal:cleared');
+    io.to(trimmedRoom).emit('terminal:inputUpdate', { text: '' });
+
+    if (typeof callback === 'function') {
+      callback({ ok: true });
+    }
   });
 
   socket.on('tool:fileFixer:repair', ({ room, content } = {}, callback = () => {}) => {

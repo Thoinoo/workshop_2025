@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useRoomState from "../hooks/useRoomState";
+import socket from "../socket";
 
 const INITIAL_BOOT_LINES = [
   "[BOOT SEQUENCE ERROR]",
@@ -9,6 +11,72 @@ const INITIAL_BOOT_LINES = [
   "Mission: Reconstruct the lost Genesis Block",
   "Hint: Satoshi left a hidden message inside...",
 ];
+
+const INITIAL_BOOT_ENTRIES = INITIAL_BOOT_LINES.map((line, index) => ({
+  id: `boot-${index}`,
+  role: "system",
+  text: line,
+  visibility: "all",
+}));
+
+const createInitialLog = () => INITIAL_BOOT_ENTRIES.map((entry) => ({ ...entry }));
+
+const convertHistoryToEntries = (historyList = []) => {
+  if (!Array.isArray(historyList)) {
+    return [];
+  }
+  return historyList.flatMap((item, historyIndex) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const entries = [];
+    if (item.command) {
+      entries.push({
+        id: `history-cmd-${historyIndex}`,
+        role: "command",
+        text: `> ${item.command}`,
+        visibility: "operators",
+      });
+    }
+    const outputLines = Array.isArray(item.outputs) ? item.outputs : [];
+    outputLines.forEach((line, outputIndex) => {
+      entries.push({
+        id: `history-out-${historyIndex}-${outputIndex}`,
+        role: "output",
+        text: String(line ?? ""),
+        visibility: "observers",
+      });
+    });
+    return entries;
+  });
+};
+
+const generateEntryId = (prefix) =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const createRuntimeCommandEntry = (command) => {
+  if (!command) {
+    return null;
+  }
+  return {
+    id: generateEntryId("cmd"),
+    role: "command",
+    text: `> ${command}`,
+    visibility: "operators",
+  };
+};
+
+const createRuntimeOutputEntries = (outputs = []) => {
+  if (!Array.isArray(outputs) || !outputs.length) {
+    return [];
+  }
+  return outputs.map((line, index) => ({
+    id: generateEntryId(`out-${index}`),
+    role: "output",
+    text: String(line ?? ""),
+    visibility: "observers",
+  }));
+};
 
 const COMMANDS = [
   {
@@ -509,18 +577,37 @@ const runGrep = ({ args }) => {
 };
 
 export default function GenesisTerminal() {
-  const [log, setLog] = useState(() =>
-    INITIAL_BOOT_LINES.map((line, index) => ({
-      id: `boot-${index}`,
-      role: "system",
-      text: line,
-    }))
-  );
+  const { room, players, username, missionStarted } = useRoomState();
+  const [log, setLog] = useState(() => createInitialLog());
   const [input, setInput] = useState("");
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const skipInputSyncRef = useRef(false);
+  const inputValueRef = useRef("");
+
+  const currentPlayer = useMemo(
+    () => players.find((player) => player?.username === username),
+    [players, username]
+  );
+
+  const effectiveRole = useMemo(() => {
+    if (!missionStarted) {
+      return "operator";
+    }
+    if (players.length <= 1) {
+      return "operator";
+    }
+    return currentPlayer?.terminalRole ?? "observer";
+  }, [currentPlayer, missionStarted, players.length]);
+
+  const isOperator = effectiveRole === "operator";
+  const isRestrictionActive = missionStarted && players.length > 1;
+
+  useEffect(() => {
+    inputValueRef.current = input;
+  }, [input]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -529,111 +616,238 @@ export default function GenesisTerminal() {
     }
   }, [log]);
 
-  const appendLog = useCallback((entries) => {
-    setLog((current) => [...current, ...entries]);
-  }, []);
+  useEffect(() => {
+    if (isOperator) {
+      inputRef.current?.focus();
+    }
+  }, [isOperator]);
 
-  const executeCommand = useCallback(
-    (rawCommand) => {
-      const trimmed = rawCommand.trim();
-      const parts = trimmed.split(/\s+/);
-      const command = parts[0] || "";
-      const args = parts.slice(1);
+  useEffect(() => {
+    if (isRestrictionActive && !isOperator) {
+      skipInputSyncRef.current = false;
+      setInput("");
+      setHistoryIndex(null);
+    }
+  }, [isOperator, isRestrictionActive]);
 
-      if (!command) {
-        appendLog([{ id: `cmd-${Date.now()}`, role: "command", text: "" }]);
+  const applyHistorySnapshot = useCallback(
+    (snapshot) => {
+      const historyEntries = convertHistoryToEntries(snapshot?.history);
+      const baseLog = createInitialLog();
+      setLog([...baseLog, ...historyEntries]);
+      if (isOperator) {
+        const sharedInput =
+          typeof snapshot?.sharedInput === "string" ? snapshot.sharedInput : "";
+        skipInputSyncRef.current = false;
+        setInput(sharedInput);
+      }
+    },
+    [isOperator]
+  );
+
+  useEffect(() => {
+    const handleState = (snapshot) => {
+      applyHistorySnapshot(snapshot);
+    };
+
+    const handleCommandExecuted = ({ command, outputs }) => {
+      const entries = [];
+      const commandEntry = createRuntimeCommandEntry(command);
+      if (commandEntry) {
+        entries.push(commandEntry);
+      }
+      entries.push(...createRuntimeOutputEntries(outputs));
+      if (!entries.length) {
         return;
       }
+      setLog((current) => [...current, ...entries]);
+    };
 
-      const outputs = [];
-      const addOutput = (text) => {
-        const lines = Array.isArray(text) ? text : [text];
-        lines.forEach((line) => {
-          outputs.push({ id: `out-${Date.now()}-${Math.random()}`, role: "output", text: line });
-        });
-      };
-
-      const logCommand = {
-        id: `cmd-${Date.now()}`,
-        role: "command",
-        text: `> ${trimmed}`,
-      };
-
-      switch (command) {
-        case "help":
-          HELP_LINES.forEach((line) => addOutput(line));
-          break;
-        case "ls":
-          addOutput(listDirectory(args[0]));
-          break;
-        case "cat":
-          if (!args[0]) {
-            addOutput("cat: missing file operand");
-          } else {
-            addOutput(readFile(args[0]));
-          }
-          break;
-        case "grep":
-          addOutput(runGrep({ args }));
-          break;
-        case "decode": {
-          if (!args[0]) {
-            addOutput("decode: missing file operand");
-          } else {
-            const result = decodeFile(args[0]);
-            if (!result.success) {
-              addOutput(result.message);
-            } else {
-              result.lines.forEach((line) => addOutput(line));
-            }
-          }
-          break;
-        }
-        case "find": {
-          if (!args[0]) {
-            addOutput("find: missing search term");
-            break;
-          }
-          const matches = findFilesByName(args[0]);
-          if (!matches.length) {
-            addOutput(`find: no file matching "${args[0]}"`);
-          } else {
-            matches.forEach((match) => addOutput(match));
-          }
-          break;
-        }
-        case "clear":
-          setLog([]);
-          return;
-        default:
-          addOutput(`Command not found: ${command}`);
+    const handleInputUpdate = ({ text }) => {
+      if (!isOperator) {
+        return;
       }
+      const nextValue = typeof text === "string" ? text : "";
+      if (skipInputSyncRef.current && nextValue === inputValueRef.current) {
+        skipInputSyncRef.current = false;
+        return;
+      }
+      skipInputSyncRef.current = false;
+      setInput(nextValue);
+    };
 
-      appendLog([logCommand, ...outputs]);
+    const handleCleared = () => {
+      setLog(createInitialLog());
+      if (isOperator) {
+        skipInputSyncRef.current = false;
+        setInput("");
+      }
+    };
+
+    socket.on("terminal:state", handleState);
+    socket.on("terminal:commandExecuted", handleCommandExecuted);
+    socket.on("terminal:inputUpdate", handleInputUpdate);
+    socket.on("terminal:cleared", handleCleared);
+
+    return () => {
+      socket.off("terminal:state", handleState);
+      socket.off("terminal:commandExecuted", handleCommandExecuted);
+      socket.off("terminal:inputUpdate", handleInputUpdate);
+      socket.off("terminal:cleared", handleCleared);
+    };
+  }, [applyHistorySnapshot, isOperator]);
+
+  useEffect(() => {
+    if (!room) {
+      return;
+    }
+    socket.emit("terminal:requestState", { room }, (snapshot) => {
+      applyHistorySnapshot(snapshot);
+    });
+  }, [room, applyHistorySnapshot]);
+
+  const updateSharedInput = useCallback(
+    (value) => {
+      if (!isOperator) {
+        return;
+      }
+      skipInputSyncRef.current = true;
+      setInput(value);
+      if (room) {
+        socket.emit("terminal:input", { room, text: value });
+      }
     },
-    [appendLog]
+    [isOperator, room]
   );
+
+  const executeCommand = useCallback((rawCommand) => {
+    const trimmed = rawCommand.trim();
+    if (!trimmed) {
+      return { type: "noop", command: "", outputs: [] };
+    }
+    const parts = trimmed.split(/\s+/);
+    const command = parts[0] || "";
+    const args = parts.slice(1);
+
+    const outputs = [];
+    const addOutput = (text) => {
+      const lines = Array.isArray(text) ? text : [text];
+      lines.forEach((line) => {
+        outputs.push(String(line ?? ""));
+      });
+    };
+
+    switch (command) {
+      case "help":
+        HELP_LINES.forEach((line) => addOutput(line));
+        break;
+      case "ls":
+        addOutput(listDirectory(args[0]));
+        break;
+      case "cat":
+        if (!args[0]) {
+          addOutput("cat: missing file operand");
+        } else {
+          addOutput(readFile(args[0]));
+        }
+        break;
+      case "grep":
+        addOutput(runGrep({ args }));
+        break;
+      case "decode": {
+        if (!args[0]) {
+          addOutput("decode: missing file operand");
+        } else {
+          const result = decodeFile(args[0]);
+          if (!result.success) {
+            addOutput(result.message);
+          } else {
+            result.lines.forEach((line) => addOutput(line));
+          }
+        }
+        break;
+      }
+      case "find": {
+        if (!args[0]) {
+          addOutput("find: missing search term");
+          break;
+        }
+        const matches = findFilesByName(args[0]);
+        if (!matches.length) {
+          addOutput(`find: no file matching "${args[0]}"`);
+        } else {
+          matches.forEach((match) => addOutput(match));
+        }
+        break;
+      }
+      case "clear":
+        return { type: "clear", command: trimmed, outputs: [] };
+      default:
+        addOutput(`Command not found: ${command}`);
+    }
+
+    return { type: "command", command: trimmed, outputs };
+  }, []);
 
   const handleSubmit = useCallback(
     (event) => {
       event.preventDefault();
-      const command = input;
-      executeCommand(command);
-      if (command.trim()) {
-        setHistory((current) => [...current, command]);
+      if (!isOperator) {
+        return;
+      }
+      const currentCommand = input;
+      const result = executeCommand(currentCommand);
+      if (!result || result.type === "noop") {
+        return;
+      }
+
+      if (result.command.trim()) {
+        setHistory((current) => [...current, result.command]);
       }
       setHistoryIndex(null);
-      setInput("");
+
+      if (result.type === "clear") {
+        updateSharedInput("");
+        if (room) {
+          socket.emit("terminal:clear", { room });
+        }
+        return;
+      }
+
+      if (room) {
+        socket.emit("terminal:execute", {
+          room,
+          command: result.command,
+          outputs: result.outputs,
+        });
+      }
+
+      updateSharedInput("");
     },
-    [executeCommand, input]
+    [executeCommand, input, isOperator, room, updateSharedInput]
+  );
+
+  const handleInputChange = useCallback(
+    (event) => {
+      if (!isOperator) {
+        return;
+      }
+      updateSharedInput(event.target.value);
+    },
+    [isOperator, updateSharedInput]
   );
 
   const handleKeyDown = useCallback(
     (event) => {
+      if (!isOperator) {
+        return;
+      }
       if (event.key === "ArrowUp" || event.key === "ArrowDown") {
         event.preventDefault();
+        if (history.length === 0) {
+          return;
+        }
         setHistoryIndex((currentIndex) => {
-          if (history.length === 0) return null;
           let newIndex = currentIndex;
           if (event.key === "ArrowUp") {
             newIndex = currentIndex === null ? history.length - 1 : Math.max(currentIndex - 1, 0);
@@ -643,33 +857,48 @@ export default function GenesisTerminal() {
             }
             newIndex = currentIndex + 1;
             if (newIndex >= history.length) {
-              setInput("");
+              updateSharedInput("");
               return null;
             }
           }
-          setInput(history[newIndex]);
+          const nextValue = history[newIndex] ?? "";
+          updateSharedInput(nextValue);
           return newIndex;
         });
       } else if (event.key === "Escape") {
-        setInput("");
+        updateSharedInput("");
         setHistoryIndex(null);
       }
     },
-    [history]
+    [history, isOperator, updateSharedInput]
   );
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const visibleLog = useMemo(() => {
+    if (!isRestrictionActive) {
+      return log;
+    }
+    return log.filter((entry) => {
+      if (entry.visibility === "all") {
+        return true;
+      }
+      if (entry.visibility === "operators") {
+        return isOperator;
+      }
+      if (entry.visibility === "observers") {
+        return !isOperator;
+      }
+      return true;
+    });
+  }, [isOperator, isRestrictionActive, log]);
 
   const renderedLog = useMemo(
     () =>
-      log.map((entry) => (
+      visibleLog.map((entry) => (
         <div key={entry.id} className={`terminal-line terminal-line--${entry.role}`}>
           {entry.text}
         </div>
       )),
-    [log]
+    [visibleLog]
   );
 
   return (
@@ -677,19 +906,25 @@ export default function GenesisTerminal() {
       <div ref={containerRef} className="terminal-display" role="log" aria-live="polite">
         {renderedLog}
       </div>
-      <form className="terminal-input-row" onSubmit={handleSubmit}>
-        <span className="terminal-prompt">&gt;</span>
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={handleKeyDown}
-          className="terminal-input"
-          spellCheck="false"
-          autoComplete="off"
-          aria-label="Terminal command input"
-        />
-      </form>
+      {!isRestrictionActive || isOperator ? (
+        <form className="terminal-input-row" onSubmit={handleSubmit}>
+          <span className="terminal-prompt">&gt;</span>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            className="terminal-input"
+            spellCheck="false"
+            autoComplete="off"
+            aria-label="Terminal command input"
+          />
+        </form>
+      ) : (
+        <div className="terminal-observer-note" role="note">
+          Mode analyste : visualisation des résultats en temps réel (saisie exclusive des opérateurs).
+        </div>
+      )}
     </div>
   );
 }

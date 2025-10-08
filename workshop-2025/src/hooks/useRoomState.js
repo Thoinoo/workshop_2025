@@ -160,12 +160,14 @@ export default function useRoomState() {
               username: player.username,
               avatar: player.avatar ?? null,
               scene: player.scene ?? null,
+              terminalRole: player.terminalRole ?? null,
             };
           }
           return {
             username: String(player || ""),
             avatar: null,
             scene: null,
+            terminalRole: null,
           };
         })
       );
