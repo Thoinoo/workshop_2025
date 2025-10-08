@@ -206,14 +206,13 @@ export default function Enigme2() {
           <p>
             La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
           </p>
-          <div className="puzzle-instructions" ref={containerRef}>
-          <div className="puzzle-instructions-enigme2">
+          <div className="puzzle-instructions">
+          <div className="puzzle-instructions-enigme2" ref={containerRef}>
             {/* Lignes de liaison */}
             <svg
               className="links-overlay"
-              width={size.w}
-              height={size.h}
-              style={{ position: "absolute", inset: 0 }}
+              viewBox={`0 0 ${Math.max(1, size.w)} ${Math.max(1, size.h)}`}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
             >
               {links.map((link, idx) => {
                 const p1 = positions.get(link.a);
