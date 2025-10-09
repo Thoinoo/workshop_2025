@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useRoomState from "../hooks/useRoomState";
 import "../styles/components_css/BombeTimer.css";
+import robotFrame1 from "../assets/robot/robot_frame_1.png";
+import robotFrame2 from "../assets/robot/robot_frame_2.png";
+import robotFrame3 from "../assets/robot/robot_frame_3.png";
+import robotFrame4 from "../assets/robot/robot_frame_4.png";
+
+const SPRITE_FRAMES = [robotFrame1, robotFrame2, robotFrame3, robotFrame4];
+const SPRITE_FRAME_COUNT = SPRITE_FRAMES.length;
 
 export default function BombeTimer({ remainingSeconds = null }) {
   const isNumeric = Number.isFinite(remainingSeconds);
 
   const [randomSuffix, setRandomSuffix] = useState("");
+  const [spriteFrame, setSpriteFrame] = useState(0);
   const shouldAnimate = isNumeric && remainingSeconds > 0;
   const { missionStarted } = useRoomState();
   const TUTORIAL_STORAGE_KEY = "timerTutorialDismissedMission";
@@ -31,15 +39,30 @@ export default function BombeTimer({ remainingSeconds = null }) {
   useEffect(() => {
     if (!shouldAnimate) {
       setRandomSuffix("");
+      setSpriteFrame(0);
       return;
     }
 
-    const interval = setInterval(() => {
-      const digits = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+    const interval = window.setInterval(() => {
+      const digits = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
       setRandomSuffix(digits);
     }, 50);
 
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
+  }, [shouldAnimate]);
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      return () => {};
+    }
+
+    const interval = window.setInterval(() => {
+      setSpriteFrame((previous) => (previous + 1) % SPRITE_FRAME_COUNT);
+    }, 180);
+
+    return () => window.clearInterval(interval);
   }, [shouldAnimate]);
 
   useEffect(() => {
@@ -74,12 +97,18 @@ export default function BombeTimer({ remainingSeconds = null }) {
     [showTutorial]
   );
 
+  const spriteSrc = SPRITE_FRAMES[spriteFrame] ?? SPRITE_FRAMES[0];
+
   return (
+    <div className="bombe-timer" role="status" aria-live="polite">
+      <div className="bombe-timer__sprite" aria-hidden="true">
+        <img src={spriteSrc} alt="" />
+      </div>
       <div className={containerClassName}>
         {showTutorial ? (
           <div className="bombe__tutorial" role="dialog" aria-live="polite">
             <p>
-              Ne laissez pas les Bicoin tomber à zéro !
+              Ne laissez pas les Bicoin tomber �� zǸro !
             </p>
             <button
               type="button"
@@ -93,5 +122,6 @@ export default function BombeTimer({ remainingSeconds = null }) {
         ) : null}
         <span className="bombe__time">{formattedTime}</span>
       </div>
+    </div>
   );
 }
