@@ -36,9 +36,6 @@
   transform: scale(1);
   pointer-events: auto;
 }
-  transform: scale(1);
-  pointer-events: auto;
-}
 
 /* Variante locale de .game-secondary pour le bouton ToolsMenu, avec padding reduit */
 .tools-menu .tools-menu__toggle.game-secondary {
