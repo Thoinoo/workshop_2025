@@ -322,6 +322,40 @@ export default function Enigme2() {
           ) : null}
         </div>
       </header>
+      {isCompleted ? (
+  <article className="enigme-post-completion">
+    <header className="enigme-post-completion__header">
+      <h3>Bravo !!</h3>
+      <h3>Les noeuds de données</h3>
+      <p className="enigme-post-completion__subtitle">
+        Deuxième bloc du reseau Bitcoin - manifeste technique et politique.
+      </p>
+    </header>
+
+    <div className="enigme-post-completion__grid">
+      <section>
+        <h4>Distribution</h4>
+        <p>
+          En 2010, le premier wallet Bitcoin public fut distribué pour tester les transactions entre utilisateurs.
+        </p>
+      </section>
+      <section>
+        <h4>Sécurité</h4>
+        <p>
+          L'introduction des clés privées multiples pour sécuriser les wallets contre le vol fut instaurée en 2011.
+         
+          
+        </p>
+      </section>
+      <section>
+        <h4>Hiérarchie</h4>
+        <p>
+          En 2013, le développement des wallets HD (Hierarchical Deterministic) a été créé, ce qui a permis la génération de multiples clés à partir d’une seule seed.
+        </p>
+      </section>
+    </div>
+  </article>
+) : null}
       <div className="game-timer-sticky">
         <div className="game-header-section game-header-section--timer">
           <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />

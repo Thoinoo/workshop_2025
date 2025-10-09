@@ -115,7 +115,13 @@ export default function Enigme4() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-        </div>
+        
+        {/* Bouton debug */}
+          {!isCompleted && (
+            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
+              Valider l'énigme (debug)
+            </button>
+          )}</div>
       </header>
       <div className="game-timer-sticky">
         <div className="game-header-section game-header-section--timer">
@@ -123,12 +129,7 @@ export default function Enigme4() {
         </div>
       </div>
 
-{/* Bouton debug */}
-          {!isCompleted && (
-            <button type="button" className="game-secondary" onClick={handleDebugComplete}>
-              Valider l'énigme (debug)
-            </button>
-          )}
+
 
           {isCompleted ? (
   <article className="enigme-post-completion">
