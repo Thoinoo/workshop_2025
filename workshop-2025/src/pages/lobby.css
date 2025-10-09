@@ -107,8 +107,8 @@ body {
 }
 
 .game-timer-sticky .game-header-section--timer {
-  width: 100%;
-  max-width: clamp(260px, 32vw, 360px);
+  /* width: 100%; */
+  /* max-width: clamp(260px, 32vw, 360px); */
   padding: clamp(0.9rem, 2.8vw, 1.25rem);
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.88);
