@@ -1,110 +1,163 @@
+/* --- CONTAINER --- */
 .mining-steps-game {
   display: flex;
   flex-direction: column;
-  gap: clamp(0.9rem, 2vw, 1.3rem);
-  padding: clamp(1.2rem, 3vw, 1.8rem);
-  border-radius: 18px;
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.72));
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.35);
+  align-items: center; 
+  justify-content: center; 
+  gap: clamp(1rem, 2vw, 1.6rem);
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border-radius: 22px;
+  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.7));
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow:
+    0 0 25px rgba(56, 189, 248, 0.15),
+    inset 0 0 40px rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  animation: fadeIn 1.2s ease;
 }
 
+/* --- HEADER --- */
 .mining-steps-header {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   text-align: center;
+  animation: slideDown 1s ease;
 }
 
 .mining-steps-header h3 {
   margin: 0;
-  font-size: clamp(1.1rem, 2.4vw, 1.35rem);
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: #f8fafc;
+  text-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
 
 .mining-steps-preview,
 .mining-steps-success {
   margin: 0;
   font-size: 0.95rem;
+  letter-spacing: 0.02em;
 }
 
 .mining-steps-preview {
   color: rgba(148, 163, 184, 0.9);
+  animation: pulseText 2s infinite alternate;
 }
 
 .mining-steps-success {
-  color: #38bdf8;
+  color: #34d399;
   font-weight: 600;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+  animation: glowSuccess 1.4s ease-in-out infinite alternate;
 }
 
+/* --- PUZZLE BOARD --- */
 .mining-steps-board {
-  position: relative;
+  position: center;
   display: grid;
-  width: min(420px, 100%);
+  width: min(520px, 100%);
   aspect-ratio: 1;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.6);
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.7);
+  box-shadow:
+    inset 0 0 25px rgba(8, 145, 178, 0.25),
+    0 0 30px rgba(56, 189, 248, 0.2);
+  animation: glowBoard 3s infinite alternate;
 }
 
+/* --- PIECES --- */
 .mining-steps-piece {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
   text-align: center;
   padding: 0.45rem;
   color: #f8fafc;
-  text-shadow: 0 0 8px rgba(8, 145, 178, 0.65);
+  text-shadow: 0 0 8px rgba(8, 145, 178, 0.8);
   background-repeat: no-repeat;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.3s ease;
   cursor: default;
+  border-radius: 4px;
 }
 
 .mining-steps-piece:not(.is-preview):not(.is-solved) {
   cursor: grab;
 }
 
-.mining-steps-piece:not(.is-preview):not(.is-solved):active {
-  cursor: grabbing;
-  transform: scale(1.02);
+.mining-steps-piece:not(.is-preview):hover {
+  transform: scale(1.06) translateY(-2px);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.45);
 }
 
+.mining-steps-piece:not(.is-preview):active {
+  cursor: grabbing;
+  transform: scale(1.1) rotateZ(1.5deg);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+}
+
+/* --- BORDURES & ÉTATS --- */
 .mining-steps-piece::after {
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(8, 145, 178, 0.28);
-  background: rgba(15, 23, 42, 0.25);
-  opacity: 0.85;
-  transition: opacity 0.25s ease;
+  border: 1px solid rgba(8, 145, 178, 0.3);
+  background: rgba(15, 23, 42, 0.2);
+  opacity: 0.8;
+  transition: opacity 0.3s ease, border-color 0.3s ease, background 0.3s ease;
   pointer-events: none;
 }
 
 .mining-steps-piece.is-preview::after {
-  opacity: 0.2;
+  opacity: 0.3;
+  background: rgba(15, 23, 42, 0.15);
 }
 
 .mining-steps-piece.is-solved::after {
-  border-color: rgba(34, 197, 94, 0.55);
-  background: rgba(22, 163, 74, 0.25);
-}
-
-.mining-steps-piece:not(.is-preview):hover::after {
-  opacity: 0.05;
+  border-color: rgba(34, 197, 94, 0.7);
+  background: rgba(22, 163, 74, 0.2);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
 }
 
 .mining-steps-piece span {
   position: relative;
   z-index: 1;
   line-height: 1.2;
+  font-weight: 500;
 }
 
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowBoard {
+  from { box-shadow: inset 0 0 15px rgba(8, 145, 178, 0.25), 0 0 20px rgba(56, 189, 248, 0.15); }
+  to { box-shadow: inset 0 0 30px rgba(8, 145, 178, 0.4), 0 0 40px rgba(56, 189, 248, 0.3); }
+}
+
+@keyframes glowSuccess {
+  from { text-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+  to { text-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+}
+
+@keyframes pulseText {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* --- RESPONSIVE --- */
 @media (max-width: 640px) {
   .mining-steps-game {
     padding: 1rem;
@@ -117,4 +170,38 @@
   .mining-steps-header h3 {
     font-size: 1.05rem;
   }
+}
+
+.mining-steps-warning {
+  color: #f87171;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+  margin-top: 0.5rem;
+}
+
+.help-button {
+  margin-top: 1.2rem;
+  align-self: center;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.help-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+}
+
+.help-button:disabled {
+  background: #374151;
+  cursor: not-allowed;
+  color: #9ca3af;
+  box-shadow: none;
 }
