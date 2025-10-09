@@ -8,6 +8,8 @@
   gap: 0.75rem;
   z-index: 9998;
   pointer-events: none;
+  z-index: 9998;
+  pointer-events: none;
 }
 
 .tools-menu--highlight .tools-menu__toggle {
@@ -20,7 +22,7 @@
   from {
     transform: scale(0.5) translateY(0);
     box-shadow: 0 0 0.75rem rgba(0, 255, 209, 0.25);
-  }
+    pointer-events: auto;}
   to {
     transform: scale(0.52) translateY(-2px);
     box-shadow: 0 0 2rem rgba(0, 255, 209, 0.55);
@@ -316,7 +318,7 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-\n@media (max-width: 768px) {
+@media (max-width: 768px) {
   .tools-menu {
     top: 0.75rem;
     right: 0.75rem;
