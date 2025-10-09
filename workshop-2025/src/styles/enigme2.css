@@ -66,6 +66,8 @@
   outline-offset: 0px;
 }
 
+/* icône centrale retirée (aucun contenu dans .node) */
+
 /* Ordinateurs latéraux */
 .computer {
   position: absolute;

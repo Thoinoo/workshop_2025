@@ -145,21 +145,19 @@ export default function Enigme4() {
       <section>
         <h4>Distribution</h4>
         <p>
-          En 2010, le premier wallet Bitcoin public fut distribué pour tester les transactions entre utilisateurs.
+          2010 - Premier wallet Bitcoin public distribué pour tester les transactions entre utilisateurs.
         </p>
       </section>
       <section>
         <h4>Sécurité</h4>
         <p>
-          L'introduction des clés privées multiples pour sécuriser les wallets contre le vol fut instaurée en 2011.
-         
-          
+          2011 - Introduction et instauration des clés privées multiples pour sécuriser les wallets contre le vol.
         </p>
       </section>
       <section>
         <h4>Hiérarchie</h4>
         <p>
-          En 2013, le développement des wallets HD (Hierarchical Deterministic) a été créé, ce qui a permis la génération de multiples clés à partir d’une seule seed.
+          2013 - Développement des wallets HD (Hierarchical Deterministic) permettant la génération de multiples clés à partir d’une seule seed.
         </p>
       </section>
     </div>
