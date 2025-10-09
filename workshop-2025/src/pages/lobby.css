@@ -1937,14 +1937,16 @@ body {
 
 .btc-spend-fx {
   position: fixed;
-  top: clamp(1rem, 4vw, 2.5rem);
-  right: clamp(1rem, 4vw, 2.5rem);
-  padding: 0.6rem 1rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1rem 2rem;
   border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 3rem);
+  letter-spacing: 0.02em;
   z-index: 11000;
-  animation: btcSpendPulse 1.6s ease-out forwards;
+  animation: btcSpendPulse 1.8s ease-out forwards;
 }
 
 .btc-spend-fx.spent {
@@ -1961,18 +1963,19 @@ body {
 
 @keyframes btcSpendPulse {
   0% {
-    transform: translateY(-8px);
+    transform: translate(-50%, -65%) scale(0.85);
     opacity: 0;
   }
-  15% {
-    transform: translateY(0);
+  25% {
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
   70% {
+    transform: translate(-50%, -48%) scale(1.05);
     opacity: 1;
   }
   100% {
-    transform: translateY(-16px);
+    transform: translate(-50%, -60%) scale(0.9);
     opacity: 0;
   }
 }
