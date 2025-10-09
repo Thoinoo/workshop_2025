@@ -8,6 +8,8 @@
   gap: 0.75rem;
   z-index: 9998;
   pointer-events: none;
+  z-index: 9998;
+  pointer-events: none;
 }
 
 .tools-menu--highlight .tools-menu__toggle {
@@ -34,11 +36,14 @@
   transform: scale(1);
   pointer-events: auto;
 }
+  transform: scale(1);
+  pointer-events: auto;
+}
 
-/* Variante locale de .game-secondary pour le bouton ToolsMenu, avec padding r�duit */
+/* Variante locale de .game-secondary pour le bouton ToolsMenu, avec padding reduit */
 .tools-menu .tools-menu__toggle.game-secondary {
   border-radius: 999px;
-  padding: 3px; /* r�duit par rapport au global */
+  padding: 3px; /* reduit par rapport au global */
   font-size: 1px;
   background-color: #ffffff00;
   border: none;
@@ -92,6 +97,7 @@
   flex-direction: column;
   gap: 0.65rem;
   z-index: 10001;
+  pointer-events: auto;
 }
 
 .tools-menu__tutorial::after {
@@ -337,6 +343,7 @@
     display: none;
   }
 }
+
 
 
 

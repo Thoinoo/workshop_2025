@@ -389,8 +389,46 @@ const setTimerSpeedForRoom = (roomName, factor) => {
   }
 };
 
+const applyTimerPenaltyForRoom = (roomName, seconds, { reason = null, message = null } = {}) => {
+  const trimmedRoom = typeof roomName === "string" ? roomName.trim() : "";
+  const amount = Number(seconds);
 
+  if (!trimmedRoom || !Number.isFinite(amount) || amount <= 0) {
+    return;
+  }
 
+  const roomState = ensureRoom(trimmedRoom);
+  if (!roomState?.timer || !roomState.timer.started) {
+    return;
+  }
+
+  roomState.timer.remaining = Math.max(0, roomState.timer.remaining - amount);
+  io.to(trimmedRoom).emit("timerUpdate", roomState.timer.remaining);
+
+  const penaltyMessage =
+    typeof message === "string" && message.trim()
+      ? message
+      : reason === "hint"
+        ? "Indice utilise : -" + amount + "s"
+        : null;
+
+  if (penaltyMessage) {
+    appendSystemMessage(trimmedRoom, penaltyMessage);
+  }
+
+  if (roomState.timer.remaining <= 0) {
+    if (roomState.timer.interval) {
+      clearInterval(roomState.timer.interval);
+      roomState.timer.interval = null;
+    }
+    if (roomState.timer.started) {
+      roomState.timer.started = false;
+      roomState.timer.remaining = 0;
+      roomState.missionFailed = true;
+      io.to(trimmedRoom).emit("missionFailed", { elapsedSeconds: 0 });
+    }
+  }
+};
 
 const stopTimerForRoom = (roomName) => {
   const room = rooms[roomName];
@@ -745,6 +783,27 @@ io.on('connection', (socket) => {
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
 
+  socket.on('timer:deduct', ({ room, seconds, reason } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+
+    const amount = Number(seconds);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+
+    const username = typeof socket.data?.username === 'string' ? socket.data.username.trim() : '';
+    let penaltyMessage = null;
+
+    if (reason === 'hint') {
+      const actor = username || 'Un joueur';
+      penaltyMessage = actor + ' a utilise un indice : -' + amount + 's';
+    }
+
+    applyTimerPenaltyForRoom(trimmedRoom, amount, { reason, message: penaltyMessage });
+  });
   socket.on('resetMission', ({ room }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -1103,3 +1162,4 @@ const pickRandomHashCell = () => {
     HASH_TRANSLATOR_NUMBERS[Math.floor(Math.random() * HASH_TRANSLATOR_NUMBERS.length)];
   return `${letter}${number}`;
 };
+
