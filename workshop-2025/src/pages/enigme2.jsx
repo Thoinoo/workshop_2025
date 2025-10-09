@@ -128,11 +128,46 @@ export default function Enigme2() {
     try {
       const raw = localStorage.getItem(`enigme2:links:${room}`);
       if (raw) {
-        setHadSavedLinks(true);
         const arr = JSON.parse(raw);
         if (Array.isArray(arr)) {
-          setLinks(arr.map((l) => ({ a: String(l.a), b: String(l.b) })));
+          const normalizeEndpoint = (value) => {
+            if (value === null || value === undefined) {
+              return null;
+            }
+            if (value === "center" || value === "left" || value === "right") {
+              return value;
+            }
+            if (typeof value === "number") {
+              return Number.isInteger(value) ? value : null;
+            }
+            if (typeof value === "string") {
+              const trimmed = value.trim();
+              if (trimmed === "center" || trimmed === "left" || trimmed === "right") {
+                return trimmed;
+              }
+              const numericValue = Number(trimmed);
+              if (Number.isInteger(numericValue)) {
+                return numericValue;
+              }
+            }
+            return null;
+          };
+
+          const restoredLinks = arr
+            .map((link) => {
+              const a = normalizeEndpoint(link?.a);
+              const b = normalizeEndpoint(link?.b);
+              if (a === null || b === null) {
+                return null;
+              }
+              return { a, b };
+            })
+            .filter(Boolean);
+
+          setHadSavedLinks(restoredLinks.length > 0);
+          setLinks(restoredLinks);
         } else {
+          setHadSavedLinks(false);
           setLinks([]);
         }
       } else {
