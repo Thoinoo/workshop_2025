@@ -341,23 +341,21 @@ export default function Enigme2() {
 
     <div className="enigme-post-completion__grid">
       <section>
-        <h4>Distribution</h4>
+        <h4>Blockchain</h4>
         <p>
-          En 2010, le premier wallet Bitcoin public fut distribué pour tester les transactions entre utilisateurs.
+          2008 – Le concept de blockchain est présenté pour la première fois dans le livre blanc de Bitcoin publié par Satoshi Nakamoto, décrivant une technologie de registre distribué sécurisé et transparent.
         </p>
       </section>
       <section>
-        <h4>Sécurité</h4>
+        <h4>Noeuds</h4>
         <p>
-          L'introduction des clés privées multiples pour sécuriser les wallets contre le vol fut instaurée en 2011.
-         
-          
+          2010 – Le réseau Bitcoin dépasse les 1 000 nœuds actifs, illustrant la croissance de sa décentralisation et la robustesse de son infrastructure distribuée.
         </p>
       </section>
       <section>
-        <h4>Hiérarchie</h4>
+        <h4>Décentralisation</h4>
         <p>
-          En 2013, le développement des wallets HD (Hierarchical Deterministic) a été créé, ce qui a permis la génération de multiples clés à partir d’une seule seed.
+          2015 – La plateforme Ethereum est lancée, introduisant les smart contracts et élargissant la décentralisation au-delà des simples transactions, vers des applications autonomes (dApps).
         </p>
       </section>
     </div>
