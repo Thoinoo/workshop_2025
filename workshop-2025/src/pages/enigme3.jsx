@@ -354,6 +354,42 @@ export default function Enigme3() {
           <h2 className="text-2xl font-bold text-center text-cyan-300 mb-4">
             🔐 Énigme 3 — Cryptex : les clés perdues
           </h2>
+          {isCompleted ? (
+            <article className="enigme-post-completion">
+              <header className="enigme-post-completion__header">
+                <h3>Bravo !!</h3>
+                <h3>Le bloc Genesis</h3>
+                <p className="enigme-post-completion__subtitle">
+                  Premier bloc du réseau Bitcoin — manifeste technique et politique.
+                </p>
+              </header>
+
+              <div className="enigme-post-completion__grid">
+                <section>
+                  <h4>Origine</h4>
+                  <p>
+                    Créé le 3 janvier 2009 par Satoshi Nakamoto, il lance la chaîne et contextualise
+                    la réponse de Bitcoin à la crise financière.
+                  </p>
+                </section>
+                <section>
+                  <h4>Message caché</h4>
+                  <p>
+                    <q>The Times 03/Jan/2009 - Chancellor on brink of second bailout for banks.</q>
+                    <br />
+                    Une référence explicite à la défiance envers les sauvetages bancaires successifs.
+                  </p>
+                </section>
+                <section>
+                  <h4>En résumé</h4>
+                  <p>
+                    Le bloc Genesis symbolise à la fois le démarrage technique de la blockchain et
+                    l’ambition d’une monnaie sans autorité centrale.
+                  </p>
+                </section>
+              </div>
+            </article>
+          ) : null}
 
           <div className="prose max-w-3xl mx-auto text-gray-200 mb-6" style={{ textAlign: "justify" }}>
             <p>
