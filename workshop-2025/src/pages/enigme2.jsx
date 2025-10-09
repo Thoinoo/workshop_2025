@@ -456,7 +456,7 @@ export default function Enigme2() {
                 }}
                 onClick={() => handleConnect(node.id)}
               >
-                <span>{node.id}</span>
+                {/* Contenu volontairement vide (pas de numéro ni icône) */}
               </div>
             ))}
           </div>
