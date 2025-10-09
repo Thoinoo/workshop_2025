@@ -724,7 +724,7 @@ export default function Enigme3() {
         ) : null}
       </div>
 
-      <PuzzleSuccessBanner visible={isCompleted || allCorrect} />
+      <PuzzleSuccessBanner visible={isCompleted} />
     </div>
   );
 }
