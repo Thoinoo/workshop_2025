@@ -168,7 +168,7 @@ export default function Enigme4() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <h2>Énigme 4</h2>
+          <h2>Énigme 4 - Opération Genesis Key</h2>
           <p>
             Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
             Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />

@@ -358,7 +358,7 @@ export default function Enigme3() {
             <article className="enigme-post-completion">
               <header className="enigme-post-completion__header">
                 <h3>Bravo !!</h3>
-                <h3>Le bloc Genesis</h3>
+                <h3>Cryptex : les clés perdues</h3>
                 <p className="enigme-post-completion__subtitle">
                   Premier bloc du réseau Bitcoin — manifeste technique et politique.
                 </p>

@@ -94,25 +94,21 @@ export default function Enigme1() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-        </div>
-      </header>
-      <div className="game-timer-sticky">
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
-        </div>
-      </div>
           {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l’énigme (debug)
             </button>
           ) : null}
-      <div className="game-layout">
-        <section className="game-card puzzle-content">
-          <p className="game-username">
-            
-          </p>
-          <h2>Bloc Genesis</h2>
-          {isCompleted ? (
+        </div>
+      </header>
+
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
+          
+{isCompleted ? (
             <article className="enigme-post-completion">
               <header className="enigme-post-completion__header">
                 <h3>Bravo !!</h3>
@@ -148,6 +144,14 @@ export default function Enigme1() {
               </div>
             </article>
           ) : null}
+
+      <div className="game-layout">
+        <section className="game-card puzzle-content">
+          <p className="game-username">
+            
+          </p>
+          <h2>Enigme 1 - Bloc Genesis</h2>
+          
 
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
