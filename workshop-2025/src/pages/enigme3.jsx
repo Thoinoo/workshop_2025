@@ -56,7 +56,10 @@ export default function Enigme3() {
   const keys = [
     { name: "Key1", tone: "gold" },
     { name: "Key2", tone: "cyan" },
-    { name: "Key3", tone: "rose" }
+    { name: "Key3", tone: "rose" },
+    { name: "Key4", tone: "vert" },
+    { name: "Key5", tone: "violet" },
+    { name: "Key6", tone: "orange" }
   ];
 
   const correctMapping = { "Wallet A": "Key1", "Wallet B": "Key2", "Wallet C": "Key3" };
@@ -276,7 +279,7 @@ export default function Enigme3() {
   const KeySVG = ({ id, size = 56 }) => {
     const tone = keys.find((k) => k.name === id)?.tone || "gray";
     const stroke =
-      tone === "gold" ? "#D4AF37" : tone === "cyan" ? "#2EE0E6" : tone === "rose" ? "#FF69B4" : "#DDD";
+      tone === "gold" ? "#D4AF37" : tone === "cyan" ? "#2EE0E6" : tone === "rose" ? "#FF69B4" : tone === "vert" ? "#00FF00" : tone === "violet" ? "#7F00FF" : tone === "orange" ? "#FFA500" : "#DDD" ;
     return (
       <motion.svg
         width={size}
@@ -375,8 +378,8 @@ export default function Enigme3() {
               d’historique, des diagnostics et des flux de transactions : le système est vivant, mais il tousse.
             </p>
             <p>
-              Trois clés ont été arrachées au registre.L’une porte un éclat doré ancien, l’autre
-              semble d’un bleu glacé presque liquide, la troisième affiche une teinte rose métallique. leurs signatures ont été effacées. Seule ta logique permettra de les rattacher
+              Six clés ont été arrachées au registre, seul 3 coreespondent. L’une porte un éclat doré ancien, l’autre
+              semble d’un bleu glacé presque liquide, la troisième affiche une teinte rose métallique, la quatrième d'un vert presque naturel, la cinquième d'un violet puissant et la sixième d'un orange relaxante. </p> <p>Leurs signatures ont été effacées. Seule ta logique permettra de les rattacher
               au bon wallet.
             </p>
             <p>
