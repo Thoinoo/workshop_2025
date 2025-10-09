@@ -322,6 +322,13 @@ export default function Enigme2() {
           ) : null}
         </div>
       </header>
+      
+      <div className="game-timer-sticky">
+        <div className="game-header-section game-header-section--timer">
+          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
+        </div>
+      </div>
+
       {isCompleted ? (
   <article className="enigme-post-completion">
     <header className="enigme-post-completion__header">
@@ -356,11 +363,6 @@ export default function Enigme2() {
     </div>
   </article>
 ) : null}
-      <div className="game-timer-sticky">
-        <div className="game-header-section game-header-section--timer">
-          <BombeTimer remainingSeconds={missionStarted ? timerRemaining : null} />
-        </div>
-      </div>
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
