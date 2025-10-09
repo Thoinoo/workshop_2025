@@ -21,11 +21,10 @@ export default function Enigme1() {
   const isCompleted = useEnigmeCompletion("enigme1", room);
   const [openedHints, setOpenedHints] = useState({});
   const [hashVisible, setHashVisible] = useState(false);
-  const [purchasedHints, setPurchasedHints] = useState({});
-  const [btcBalance, setBtcBalance] = useState(1800);
+  const [unlockedHints, setUnlockedHints] = useState({});
   const [pendingHint, setPendingHint] = useState(null);
-  const [spendFx, setSpendFx] = useState(null);
-  const HINT_COST = 60;
+  const [penaltyFx, setPenaltyFx] = useState(null);
+  const HINT_TIME_PENALTY = 60;
   const handleDebugComplete = () => {
     if (!room || isCompleted) {
       return;
@@ -35,7 +34,7 @@ export default function Enigme1() {
   };
 
   const handleHintClick = (index) => {
-    if (purchasedHints[index]) {
+    if (unlockedHints[index]) {
       setOpenedHints((current) => ({
         ...current,
         [index]: !current[index]
@@ -43,29 +42,25 @@ export default function Enigme1() {
       return;
     }
 
-    if (btcBalance < HINT_COST) {
-      setSpendFx({ type: "insufficient" });
-      window.setTimeout(() => setSpendFx(null), 1800);
-      return;
-    }
-
     setPendingHint(index);
   };
 
-  const handleConfirmHintPurchase = () => {
+  const handleConfirmHintUnlock = () => {
     if (pendingHint === null) {
       return;
     }
 
     setPendingHint(null);
-    setPurchasedHints((prev) => ({ ...prev, [pendingHint]: true }));
+    setUnlockedHints((prev) => ({ ...prev, [pendingHint]: true }));
     setOpenedHints((prev) => ({ ...prev, [pendingHint]: true }));
-    setBtcBalance((prev) => Math.max(prev - HINT_COST, 0));
-    setSpendFx({ type: "spent", amount: HINT_COST });
-    window.setTimeout(() => setSpendFx(null), 1800);
+    if (room) {
+      socket.emit("timer:deduct", { room, seconds: HINT_TIME_PENALTY, reason: "hint" });
+    }
+    setPenaltyFx({ amount: HINT_TIME_PENALTY });
+    window.setTimeout(() => setPenaltyFx(null), 1800);
   };
 
-  const handleCancelHintPurchase = () => {
+  const handleCancelHintUnlock = () => {
     setPendingHint(null);
   };
 
@@ -192,6 +187,7 @@ export default function Enigme1() {
           <GenesisTerminal />
           <div className="enigme-hints">
             <div className="enigme-hints__balance">
+              <span>Chaque indice retire {HINT_TIME_PENALTY}s du timer de l'equipe.</span>
             </div>
             <h3>Indices</h3>
             <ul className="enigme-hints__list">
@@ -244,22 +240,22 @@ export default function Enigme1() {
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
-      {spendFx ? (
-        <div className={"btc-spend-fx " + spendFx.type}>
-          {spendFx.type === "spent" ? "- " + spendFx.amount + " BTC" : "Solde insuffisant"}
+      {penaltyFx ? (
+        <div className="btc-spend-fx spent">
+          - {penaltyFx.amount} BTC ! 
         </div>
       ) : null}
 
       {pendingHint !== null ? (
         <div className="hint-purchase-backdrop">
           <div className="hint-purchase-modal">
-            <h4>Débloquer l’indice {pendingHint + 1}</h4>
-            <p>Dépenser {HINT_COST} BTC pour révéler cet indice ?</p>
+            <h4>Debloquer l'indice {pendingHint + 1}</h4>
+            <p>Reduire le timer de {HINT_TIME_PENALTY} secondes pour reveler cet indice ?</p>
             <div className="hint-purchase-actions">
-              <button type="button" className="game-primary" onClick={handleConfirmHintPurchase}>
-                Payer {HINT_COST} BTC
+              <button type="button" className="game-primary" onClick={handleConfirmHintUnlock}>
+                Confirmer (-{HINT_TIME_PENALTY}s)
               </button>
-              <button type="button" className="game-secondary" onClick={handleCancelHintPurchase}>
+              <button type="button" className="game-secondary" onClick={handleCancelHintUnlock}>
                 Annuler
               </button>
             </div>
@@ -302,13 +298,3 @@ export default function Enigme1() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
