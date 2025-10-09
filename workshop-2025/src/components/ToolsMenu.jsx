@@ -384,12 +384,14 @@ export default function ToolsMenu() {
         showTutorial ? "tools-menu--highlight" : ""
       }`}
       ref={containerRef}
+      style={{ pointerEvents: "none" }}
     >
       <button
         type="button"
         className="game-secondary tools-menu__toggle"
         onClick={handleToggle}
         aria-expanded={isOpen ? "true" : "false"}
+        style={{ pointerEvents: "auto" }}
       >
         <img src={toolsMenuIllustration} alt="Illustration du panneau d'outils" className="tools-menu__illustration" />
       </button>
@@ -408,7 +410,7 @@ export default function ToolsMenu() {
           </button>
         </aside>
       ) : null}
-      <div className="tools-menu__panel" aria-hidden={isOpen ? "false" : "true"}>
+      <div className="tools-menu__panel" aria-hidden={isOpen ? "false" : "true"} style={{ pointerEvents: isOpen ? "auto" : "none" }}>
         <header className="tools-menu__header">
           
           <div className="tools-menu__title">
