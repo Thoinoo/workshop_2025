@@ -188,6 +188,7 @@ export default function Enigme1() {
             </p> */}
           </div>
 
+          <p>Vous trouvez un post-it avec le mot "help" collé sur un terminal étrang.</p>
           <GenesisTerminal />
           <div className="enigme-hints">
             <div className="enigme-hints__balance">
