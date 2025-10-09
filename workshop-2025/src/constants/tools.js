@@ -12,7 +12,7 @@ export const TOOL_DEFINITIONS = {
   [TOOL_IDS.HASH_TRANSLATOR]: {
     id: TOOL_IDS.HASH_TRANSLATOR,
     name: "Hash Translator",
-    description: "Decode un hash pour identifier la bonne case a cibler.",
+    description: "Sert à décoder les hash, a quoi ça pourrait bien servir ?",
   },
 };
 

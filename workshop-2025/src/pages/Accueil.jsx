@@ -154,7 +154,7 @@ export default function Accueil() {
           <h2>{mode === MODE_JOIN ? "Rejoindre une salle" : "Creer une salle"}</h2>
           <p>
             {mode === MODE_JOIN
-              ? "Entrez le code de salle communique par votre controleur pour integrer l'equipe deja en place."
+              ? "Entrez le code de salle communiqué par votre controleur pour integrer l'équipe déjà en place."
               : "Lancez une mission et appeler vos agents !"}
           </p>
 

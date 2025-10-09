@@ -102,7 +102,7 @@ export default function Jeu() {
   }, [titleCompleted]);
 
   return (
-    <div className="game-page">
+    <div className="game-page game-page--fixed-header">
       <header className="game-header">
         <div className="game-header-section game-header-section--info">
           <EnigmesGridMenu room={room} />

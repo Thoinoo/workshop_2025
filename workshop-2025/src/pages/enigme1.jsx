@@ -21,6 +21,11 @@ export default function Enigme1() {
   const isCompleted = useEnigmeCompletion("enigme1", room);
   const [openedHints, setOpenedHints] = useState({});
   const [hashVisible, setHashVisible] = useState(false);
+  const [purchasedHints, setPurchasedHints] = useState({});
+  const [btcBalance, setBtcBalance] = useState(1800);
+  const [pendingHint, setPendingHint] = useState(null);
+  const [spendFx, setSpendFx] = useState(null);
+  const HINT_COST = 60;
   const handleDebugComplete = () => {
     if (!room || isCompleted) {
       return;
@@ -29,11 +34,39 @@ export default function Enigme1() {
     socket.emit("enigmeStatusUpdate", { room, key: "enigme1", completed: true });
   };
 
-  const toggleHint = (index) => {
-    setOpenedHints((current) => ({
-      ...current,
-      [index]: !current[index],
-    }));
+  const handleHintClick = (index) => {
+    if (purchasedHints[index]) {
+      setOpenedHints((current) => ({
+        ...current,
+        [index]: !current[index]
+      }));
+      return;
+    }
+
+    if (btcBalance < HINT_COST) {
+      setSpendFx({ type: "insufficient" });
+      window.setTimeout(() => setSpendFx(null), 1800);
+      return;
+    }
+
+    setPendingHint(index);
+  };
+
+  const handleConfirmHintPurchase = () => {
+    if (pendingHint === null) {
+      return;
+    }
+
+    setPendingHint(null);
+    setPurchasedHints((prev) => ({ ...prev, [pendingHint]: true }));
+    setOpenedHints((prev) => ({ ...prev, [pendingHint]: true }));
+    setBtcBalance((prev) => Math.max(prev - HINT_COST, 0));
+    setSpendFx({ type: "spent", amount: HINT_COST });
+    window.setTimeout(() => setSpendFx(null), 1800);
+  };
+
+  const handleCancelHintPurchase = () => {
+    setPendingHint(null);
   };
 
   useEffect(() => {
@@ -129,7 +162,7 @@ export default function Enigme1() {
               peut etre verifiee et l historique se desintegre.
             </p>
             <p>
-              Trouvez et réparez le block Genesis !
+              Trouvez et reparez le block Genesis !
             </p>
             {/* <p>
               Utilisez le terminal et tapez <code>help</code> si besoin. Gardez ces commandes a
@@ -157,6 +190,8 @@ export default function Enigme1() {
 
           <GenesisTerminal />
           <div className="enigme-hints">
+            <div className="enigme-hints__balance">
+            </div>
             <h3>Indices</h3>
             <ul className="enigme-hints__list">
               <li
@@ -165,12 +200,12 @@ export default function Enigme1() {
                 <button
                   type="button"
                   className="enigme-hints__toggle"
-                  onClick={() => toggleHint(0)}
+                  onClick={() => handleHintClick(0)}
                   aria-expanded={openedHints[0] ? "true" : "false"}
                 >
                   Indice 1
                 </button>
-                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un find [mot] permettrais de mettre en avant certains fichier peut être</span>
+                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un find [mot] permettrais de mettre en avant certains fichier peut etre</span>
               </li>
               <li
                 className={`enigme-hints__item ${openedHints[1] ? "is-open" : ""}`}
@@ -178,12 +213,12 @@ export default function Enigme1() {
                 <button
                   type="button"
                   className="enigme-hints__toggle"
-                  onClick={() => toggleHint(1)}
+                  onClick={() => handleHintClick(1)}
                   aria-expanded={openedHints[1] ? "true" : "false"}
                 >
                   Indice 2
                 </button>
-                <span className="enigme-hints__content">genesis/genesis_note2.enc semble encodé, et si on essayait de le déchiffrer ?</span>
+                <span className="enigme-hints__content">genesis/genesis_note2.enc semble encode, et si on essayait de le dechiffrer ?</span>
               </li>
               <li
                 className={`enigme-hints__item ${openedHints[2] ? "is-open" : ""}`}
@@ -191,12 +226,12 @@ export default function Enigme1() {
                 <button
                   type="button"
                   className="enigme-hints__toggle"
-                  onClick={() => toggleHint(2)}
+                  onClick={() => handleHintClick(2)}
                   aria-expanded={openedHints[2] ? "true" : "false"}
                 >
                   Indice 3
                 </button>
-                <span className="enigme-hints__content">Des mots ressortent apres avoir dechiffre genesis_note2.enc. Un find -il [mot] sur l un de ces indices devrait pointer vers le fichier a traiter et à réparer, peut être avec un de vos outils !.</span>
+                <span className="enigme-hints__content">Des mots ressortent apres avoir dechiffre genesis_note2.enc. Un find -il [mot] sur l un de ces indices devrait pointer vers le fichier a traiter et a reparer, peut etre avec un de vos outils !.</span>
               </li>
             </ul>
           </div>
@@ -208,6 +243,28 @@ export default function Enigme1() {
           <Chat chat={chat} onSendMessage={sendMessage} />
         </aside>
       </div>
+      {spendFx ? (
+        <div className={"btc-spend-fx " + spendFx.type}>
+          {spendFx.type === "spent" ? "- " + spendFx.amount + " BTC" : "Solde insuffisant"}
+        </div>
+      ) : null}
+
+      {pendingHint !== null ? (
+        <div className="hint-purchase-backdrop">
+          <div className="hint-purchase-modal">
+            <h4>Debloquer l'indice {pendingHint + 1}</h4>
+            <p>Depenser {HINT_COST} BTC pour reveler cet indice ?</p>
+            <div className="hint-purchase-actions">
+              <button type="button" className="game-primary" onClick={handleConfirmHintPurchase}>
+                Payer {HINT_COST} BTC
+              </button>
+              <button type="button" className="game-secondary" onClick={handleCancelHintPurchase}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="hash-reveal">
         <button
           type="button"
@@ -244,6 +301,12 @@ export default function Enigme1() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

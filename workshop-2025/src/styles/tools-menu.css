@@ -145,11 +145,12 @@
   width: 100%;
   max-height: 60px;
   object-fit: cover;
-  /* border-radius: 0.6rem; */
   border-radius: 14.6rem;
   margin-bottom: 0.75rem;
-  border: 1px solid rgba(0, 255, 209, 0.25);
-  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.35);
+  padding: 0.25rem;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.4), rgba(59, 130, 246, 0.35));
+  border: 1px solid rgba(34, 211, 238, 0.7);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.35), inset 0 0 12px rgba(14, 165, 233, 0.45);
 }
 
 .tools-menu__title {
@@ -334,6 +335,7 @@
     display: none;
   }
 }
+
 
 
 
