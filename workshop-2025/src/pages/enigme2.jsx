@@ -496,7 +496,7 @@ export default function Enigme2() {
             style={{
               display: "block",
               marginTop: "0.25rem",
-              color: "#4b5563",
+              color: "#0f172a",
               fontSize: "0.8rem",
             }}
           >
