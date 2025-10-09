@@ -221,7 +221,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
         {showTutorial ? (
           <div className="bombe__tutorial" role="dialog" aria-live="polite">
             <p>
-              Ne laissez pas les Bicoin tomber �� zǸro !
+              Ne laissez pas les Bicoin tomber le compteur à zéro !
             </p>
             <button
               type="button"

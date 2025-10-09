@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Chat from "../components/Chat";
 import PlayersList from "../components/PlayersList";
@@ -12,12 +12,14 @@ import useEnigmeCompletion from "../hooks/useEnigmeCompletion";
 import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
 import ToolsMenu from "../components/ToolsMenu";
+import MiningStepsGame from "../components/MiningStepsGame";
 
 export default function Enigme5() {
   const navigate = useNavigate();
   const { room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
     useRoomState();
   const isCompleted = useEnigmeCompletion("enigme5", room);
+  const [puzzleSolved, setPuzzleSolved] = useState(false);
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -31,6 +33,12 @@ export default function Enigme5() {
     }
   }, [location.pathname, missionFailed, navigate]);
 
+  useEffect(() => {
+    if (isCompleted) {
+      setPuzzleSolved(true);
+    }
+  }, [isCompleted]);
+
   const handleDebugComplete = () => {
     if (!room || isCompleted) {
       return;
@@ -38,6 +46,18 @@ export default function Enigme5() {
     setEnigmeStatus(room, "enigme5", true);
     socket.emit("enigmeStatusUpdate", { room, key: "enigme5", completed: true });
   };
+
+  const handlePuzzleComplete = useCallback(() => {
+    if (puzzleSolved || isCompleted) {
+      return;
+    }
+
+    setPuzzleSolved(true);
+    if (room) {
+      setEnigmeStatus(room, "enigme5", true);
+      socket.emit("enigmeStatusUpdate", { room, key: "enigme5", completed: true });
+    }
+  }, [puzzleSolved, isCompleted, room]);
 
   return (
     <div className="game-page">
@@ -66,18 +86,25 @@ export default function Enigme5() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <h2>Énigme 5</h2>
-          {isCompleted ? (
-            <div className="enigme-post-completion">
-              Ajouter ici les informations post reussite de l enigme
-            </div>
-          ) : null}
+          <h2>Enigme 5 - Le cycle du minage</h2>
           <p>
-            Texte de présentation
+            Assemblez les 25 etapes du voyage d une transaction pour reformer le bloc cible. La
+            scene reste visible quelques secondes avant d etre melangee : memorisez-la puis replacez
+            chaque piece pour reconstituer l ordre logique du minage.
           </p>
           <div className="puzzle-instructions">
-            <p>Énigme</p>
+            <ul>
+              <li>Observez l image complete avant le melange.</li>
+              <li>Glissez les pieces pour reconstituer la sequence correcte.</li>
+              <li>Pointez une piece pour afficher l indice associe a l etape.</li>
+            </ul>
           </div>
+          <MiningStepsGame onComplete={handlePuzzleComplete} disabled={puzzleSolved} />
+          {isCompleted ? (
+            <div className="enigme-post-completion">
+              Bloc reconstruit : le reseau valide la transaction et le cycle continue.
+            </div>
+          ) : null}
         </section>
         <aside className="chat-panel">
           <PlayersList players={players} />
