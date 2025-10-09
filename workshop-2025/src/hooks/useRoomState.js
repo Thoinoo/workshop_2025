@@ -21,7 +21,7 @@ const STORAGE_KEYS = {
   leaderboardEntry: "leaderboardEntry",
 };
 
-const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4"];
+const REQUIRED_ENIGMES = ["enigme1", "enigme2", "enigme3", "enigme4", "enigme5"];
 
 let lastDefeatRedirectSource = null;
 const readBoolean = (key, fallback = false) => sessionStorage.getItem(key) === "true" || fallback;

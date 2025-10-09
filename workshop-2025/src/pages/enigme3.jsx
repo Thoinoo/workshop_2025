@@ -294,26 +294,7 @@ export default function Enigme3() {
     );
   };
 
-  const ConfettiLayer = () => (
-    <motion.div className="absolute inset-0 pointer-events-none z-40">
-      {[...Array(26)].map((_, i) => {
-        const left = Math.random() * 100;
-        const delay = Math.random() * 0.8;
-        const emoji = ["🎉", "✨", "💎", "🔆"][Math.floor(Math.random() * 4)];
-        return (
-          <motion.div
-            key={i}
-            initial={{ y: -40, x: `${left}vw`, opacity: 0 }}
-            animate={{ y: ["-20vh", "80vh"], opacity: [0, 1, 0] }}
-            transition={{ duration: 2.2 + Math.random() * 1.2, delay }}
-            style={{ position: "absolute", left: `${left}vw`, fontSize: 18 + Math.random() * 20 }}
-          >
-            {emoji}
-          </motion.div>
-        );
-      })}
-    </motion.div>
-  );
+
 
   const bgStyle = {
     background:
@@ -680,7 +661,6 @@ export default function Enigme3() {
               </div>
             )}
 
-            {allCorrect && <ConfettiLayer />}
           </div>
         </section>
 
