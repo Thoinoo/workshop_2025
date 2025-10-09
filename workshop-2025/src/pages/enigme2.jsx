@@ -17,6 +17,90 @@ import socket from "../socket";
 import { setEnigmeStatus } from "../utils/enigmesProgress";
 import ToolsMenu from "../components/ToolsMenu";
 
+const ENIGME2_SPECIAL_ENDPOINTS = new Set(["center", "left", "right"]);
+
+const ENIGME2_NODES = [
+  { id: 1, angle: 0 },
+  { id: 2, angle: 60 },
+  { id: 3, angle: 120 },
+  { id: 4, angle: 180 },
+  { id: 5, angle: 240 },
+  { id: 6, angle: 300 },
+  // Extra diagonal nodes per corner, slightly closer to the center
+  { id: 7, angle: 30, r: 250 },
+  { id: 8, angle: 150, r: 250 },
+  { id: 9, angle: 210, r: 250 },
+  { id: 10, angle: 330, r: 250 },
+];
+
+const ENIGME2_NODE_ID_SET = new Set(ENIGME2_NODES.map((node) => node.id));
+
+const normalizeLinkEndpoint = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.length) {
+      return null;
+    }
+    if (ENIGME2_SPECIAL_ENDPOINTS.has(trimmed)) {
+      return trimmed;
+    }
+    const numericValue = Number(trimmed);
+    if (Number.isInteger(numericValue) && ENIGME2_NODE_ID_SET.has(numericValue)) {
+      return numericValue;
+    }
+    return null;
+  }
+  if (typeof value === "number") {
+    if (Number.isInteger(value) && ENIGME2_NODE_ID_SET.has(value)) {
+      return value;
+    }
+    return null;
+  }
+  return null;
+};
+
+const normalizeLinksArray = (links) => {
+  if (!Array.isArray(links)) {
+    return [];
+  }
+
+  const seen = new Set();
+  const normalized = [];
+
+  for (const rawLink of links) {
+    const a = normalizeLinkEndpoint(rawLink?.a);
+    const b = normalizeLinkEndpoint(rawLink?.b);
+    if (a === null || b === null || a === b) {
+      continue;
+    }
+
+    const keyA = typeof a === "number" ? `n${a}` : `s${a}`;
+    const keyB = typeof b === "number" ? `n${b}` : `s${b}`;
+    const sortAB = keyA <= keyB;
+    const dedupeKey = sortAB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
+    if (seen.has(dedupeKey)) {
+      continue;
+    }
+
+    seen.add(dedupeKey);
+    normalized.push({
+      a: sortAB ? a : b,
+      b: sortAB ? b : a,
+    });
+  }
+
+  normalized.sort((left, right) => {
+    const leftKey = `${typeof left.a === "number" ? `n${left.a}` : `s${left.a}`}-${typeof left.b === "number" ? `n${left.b}` : `s${left.b}`}`;
+    const rightKey = `${typeof right.a === "number" ? `n${right.a}` : `s${right.a}`}-${typeof right.b === "number" ? `n${right.b}` : `s${right.b}`}`;
+    return leftKey.localeCompare(rightKey);
+  });
+
+  return normalized;
+};
+
 export default function Enigme2() {
   const navigate = useNavigate();
   const { room, players, chat, timerRemaining, sendMessage, missionStarted, missionFailed } =
@@ -29,6 +113,8 @@ export default function Enigme2() {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hashVisible, setHashVisible] = useState(false);
+  const skipBroadcastRef = useRef(false);
+  const localLinksRef = useRef({ links: [], hasLinks: false });
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -50,19 +136,7 @@ export default function Enigme2() {
     socket.emit("enigmeStatusUpdate", { room, key: "enigme2", completed: true });
   };
 
-  const nodes = [
-    { id: 1, angle: 0 },
-    { id: 2, angle: 60 },
-    { id: 3, angle: 120 },
-    { id: 4, angle: 180 },
-    { id: 5, angle: 240 },
-    { id: 6, angle: 300 },
-    // Nouveaux nœuds diagonaux (un par "coin"), légèrement plus proches du centre
-    { id: 7, angle: 30, r: 250 },   // coin haut-droite (triangle avec 1 et 2)
-    { id: 8, angle: 150, r: 250 },  // coin haut-gauche (triangle avec 3 et 4)
-    { id: 9, angle: 210, r: 250 },  // coin bas-gauche (triangle avec 4 et 5)
-    { id: 10, angle: 330, r: 250 }, // coin bas-droite (triangle avec 6 et 1)
-  ];
+  const nodes = ENIGME2_NODES;
 
   const RADIUS = 160; // distance pixels du centre pour les noeuds
 
@@ -122,74 +196,112 @@ export default function Enigme2() {
     setSelected(null);
   };
   
-  // Charger les liens sauvegardés pour la salle courante
+  // Charger les liens sauvegardes en local pour servir de repli
   useEffect(() => {
-    if (!room) return;
+    if (!room) {
+      localLinksRef.current = { links: [], hasLinks: false };
+      return;
+    }
     try {
       const raw = localStorage.getItem(`enigme2:links:${room}`);
-      if (raw) {
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) {
-          const normalizeEndpoint = (value) => {
-            if (value === null || value === undefined) {
-              return null;
-            }
-            if (value === "center" || value === "left" || value === "right") {
-              return value;
-            }
-            if (typeof value === "number") {
-              return Number.isInteger(value) ? value : null;
-            }
-            if (typeof value === "string") {
-              const trimmed = value.trim();
-              if (trimmed === "center" || trimmed === "left" || trimmed === "right") {
-                return trimmed;
-              }
-              const numericValue = Number(trimmed);
-              if (Number.isInteger(numericValue)) {
-                return numericValue;
-              }
-            }
-            return null;
-          };
-
-          const restoredLinks = arr
-            .map((link) => {
-              const a = normalizeEndpoint(link?.a);
-              const b = normalizeEndpoint(link?.b);
-              if (a === null || b === null) {
-                return null;
-              }
-              return { a, b };
-            })
-            .filter(Boolean);
-
-          setHadSavedLinks(restoredLinks.length > 0);
-          setLinks(restoredLinks);
-        } else {
-          setHadSavedLinks(false);
-          setLinks([]);
-        }
-      } else {
-        setHadSavedLinks(false);
-        setLinks([]);
+      if (!raw) {
+        localLinksRef.current = { links: [], hasLinks: false };
+        return;
       }
+      const parsed = JSON.parse(raw);
+      const restoredLinks = normalizeLinksArray(parsed);
+      localLinksRef.current = {
+        links: restoredLinks,
+        hasLinks: restoredLinks.length > 0,
+      };
     } catch (_e) {
-      setLinks([]);
+      localLinksRef.current = { links: [], hasLinks: false };
     }
-    setInitialized(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room]);
 
-  // Persister les liens quand ils changent
+  // Persister les liens et synchroniser le serveur quand ils changent
   useEffect(() => {
     if (!initialized || !room) return;
+
+    const snapshot = links.map((link) => ({ a: link.a, b: link.b }));
+    localLinksRef.current = {
+      links: snapshot,
+      hasLinks: snapshot.length > 0,
+    };
+
     try {
-      localStorage.setItem(`enigme2:links:${room}`, JSON.stringify(links));
+      localStorage.setItem(`enigme2:links:${room}`, JSON.stringify(snapshot));
     } catch (_e) {
       // ignore quota errors
     }
+
+    if (skipBroadcastRef.current) {
+      skipBroadcastRef.current = false;
+      return;
+    }
+
+    socket.emit("enigme2:updateLinks", { room, links: snapshot });
   }, [links, room, initialized]);
+
+  // Synchroniser les liens via le serveur pour tous les joueurs
+  useEffect(() => {
+    if (!room) {
+      return;
+    }
+
+    const applyIncomingLinks = (incomingLinks, { skipBroadcast }) => {
+      const normalizedLinks = normalizeLinksArray(incomingLinks);
+      skipBroadcastRef.current = Boolean(skipBroadcast);
+      setLinks((previous) => {
+        if (
+          previous.length === normalizedLinks.length &&
+          previous.every((link, index) => {
+            const candidate = normalizedLinks[index];
+            return link?.a === candidate?.a && link?.b === candidate?.b;
+          })
+        ) {
+          return previous;
+        }
+        return normalizedLinks;
+      });
+      setHadSavedLinks(normalizedLinks.length > 0);
+      setInitialized(true);
+    };
+
+    const handleState = (payload = {}) => {
+      const payloadRoom = typeof payload.room === "string" ? payload.room.trim() : "";
+      if (!payloadRoom || payloadRoom !== room) {
+        return;
+      }
+      applyIncomingLinks(payload.links ?? [], { skipBroadcast: true });
+    };
+
+    socket.on("enigme2:state", handleState);
+
+    socket.emit("enigme2:requestState", { room }, (response = {}) => {
+      const stateLinks = Array.isArray(response?.links)
+        ? response.links
+        : Array.isArray(response?.state?.links)
+        ? response.state.links
+        : [];
+
+      if (stateLinks.length > 0) {
+        applyIncomingLinks(stateLinks, { skipBroadcast: true });
+        return;
+      }
+
+      if (localLinksRef.current.hasLinks) {
+        applyIncomingLinks(localLinksRef.current.links, { skipBroadcast: false });
+        return;
+      }
+
+      applyIncomingLinks([], { skipBroadcast: true });
+    });
+
+    return () => {
+      socket.off("enigme2:state", handleState);
+    };
+  }, [room]);
 
   // Lier automatiquement les ordinateurs à la database au premier démarrage (si aucune progression sauvegardée)
   useEffect(() => {
@@ -537,3 +649,4 @@ export default function Enigme2() {
     </div>
   );
 }
+
