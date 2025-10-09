@@ -80,7 +80,7 @@ export default function Defeat() {
 
       <main className="defeat-layout">
         <section className="game-card defeat-card">
-          <h1>Mission echouee</h1>
+          <h1>Mission échouée</h1>
           <p className="defeat-subtitle">
             Le reseau blockchain s&apos;est effondre avant la restauration complete. Analyse de
             l&apos;incident :

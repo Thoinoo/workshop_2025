@@ -252,7 +252,7 @@ export default function ToolsMenu() {
 
     return (
       <form className="tools-menu__form" onSubmit={handleFileFixerSubmit}>
-        <p className="tools-menu__ownership">Vous detenez File Fixer.</p>
+        <p className="tools-menu__ownership">Vous détenez File Fixer.</p>
         <label className="tools-menu__label">
           Fichier a reparer
           <textarea
@@ -285,7 +285,7 @@ export default function ToolsMenu() {
               <p className="tools-menu__feedback-details">{fileFixerFeedback.details}</p>
             ) : null}
             {fileFixerFeedback.success && !fileFixerFeedback.alreadyCompleted ? (
-              <p className="tools-menu__feedback-note">Enigme 1 validee.</p>
+              <p className="tools-menu__feedback-note">Énigme 1 validée.</p>
             ) : null}
             {fileFixerFeedback.success && fileFixerFeedback.alreadyCompleted ? (
               <p className="tools-menu__feedback-note">
@@ -317,7 +317,7 @@ export default function ToolsMenu() {
 
     return (
       <form className="tools-menu__form" onSubmit={handleHashTranslatorSubmit}>
-        <p className="tools-menu__ownership">Vous detenez Hash Translator.</p>
+        <p className="tools-menu__ownership">Vous détenez Hash Translator.</p>
         <label className="tools-menu__label">
           Hash a traduire
           <input
@@ -413,7 +413,7 @@ export default function ToolsMenu() {
           
           <div className="tools-menu__title">
             <h3>Outils de mission</h3>
-            <p>Chaque outil est attribue automatiquement a un agent.</p>
+            <p>Chaque outil est attribué automatiquement à un agent.</p>
           </div>
         </header>
         <div className="tools-menu__content">

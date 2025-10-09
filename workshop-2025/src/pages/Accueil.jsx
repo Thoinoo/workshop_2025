@@ -151,7 +151,7 @@ export default function Accueil() {
               Creer
             </button>
           </div>
-          <h2>{mode === MODE_JOIN ? "Rejoindre une salle" : "Creer une salle"}</h2>
+          <h2>{mode === MODE_JOIN ? "Rejoindre une salle" : "Créer une salle"}</h2>
           <p>
             {mode === MODE_JOIN
               ? "Entrez le code de salle communiqué par votre controleur pour integrer l'équipe déjà en place."
@@ -216,13 +216,13 @@ export default function Accueil() {
 
           <div className="leaderboard-card">
             <div className="leaderboard__header">
-              <h3>Leaderboard</h3>
+              <h3>Classement</h3>
             </div>
             {leaderboardError ? (
               <p className="leaderboard__error">{leaderboardError}</p>
             ) : null}
             {leaderboardLoading ? (
-              <p className="leaderboard__loading">Chargement...</p>
+              <p className="leaderboard__loading">Chargement…</p>
             ) : null}
             {!leaderboardLoading && !leaderboardError ? (
               leaderboard.length ? (
@@ -239,7 +239,7 @@ export default function Accueil() {
                   ))}
                 </ol>
               ) : (
-                <p className="leaderboard__empty">Aucun temps enregistre pour le moment.</p>
+                <p className="leaderboard__empty">Aucun temps enregistré pour le moment.</p>
               )
             ) : null}
           </div>

@@ -66,7 +66,7 @@ export default function Enigme5() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <h2>Enigme 5</h2>
+          <h2>Énigme 5</h2>
           {isCompleted ? (
             <div className="enigme-post-completion">
               Ajouter ici les informations post reussite de l enigme
@@ -76,7 +76,7 @@ export default function Enigme5() {
             Texte de présentation
           </p>
           <div className="puzzle-instructions">
-            <p>Enigme</p>
+            <p>Énigme</p>
           </div>
         </section>
         <aside className="chat-panel">

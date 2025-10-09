@@ -28,12 +28,12 @@ export default function Preparation() {
 
   const infoMessage = useMemo(() => {
     if (players.length <= 1) {
-      return "En attente de vos coequipiers. Partagez le code de salle pour les inviter avant de lancer la mission.";
+      return "En attente de vos coéquipiers. Partagez le code de salle pour les inviter avant de lancer la mission.";
     }
     if (isHost) {
-      return "Tout le monde est la ? Vous pouvez lancer la mission lorsque l'equipe est prete.";
+      return "Tout le monde est là ? Vous pouvez lancer la mission lorsque l’équipe est prête.";
     }
-    return "L'hote demarrera la mission des que l'equipe est au complet. Restez a l'ecoute.";
+    return "L’hôte démarrera la mission dès que l’équipe est au complet. Restez à l’écoute.";
   }, [isHost, players.length]);
 
   useEffect(() => {
@@ -51,10 +51,10 @@ export default function Preparation() {
           <p className="game-username">
             {username ? (
               <>
-                Agent <strong>{username}</strong>, nous attendons l'equipe avant de declencher le compte a rebours.
+                Agent <strong>{username}</strong>, nous attendons l’équipe avant de déclencher le compte à rebours.
               </>
             ) : (
-              "Temps de preparation en cours."
+              "Temps de préparation en cours."
             )}
           </p>
         </div>
@@ -78,10 +78,10 @@ export default function Preparation() {
         <section className="game-card">
           <h2>Transmission prioritaire : RASSEMBLEMENT DES AGENTS</h2>
 
-          <div >
-          <h4>Numero de salle - appelez des renforts</h4>
+          <div>
+          <h4>Numéro de salle — appelez des renforts</h4>
             <p>
-              En haut a gauche, votre numero de salle clignote : c'est le seul canal pour appeler d'autres ingenieurs. Partagez-le maintenant. Chaque nouvelle paire d'yeux et de cerveaux augmente vos chances de reparer la chaine avant l'ultime effondrement.
+              En haut à gauche, votre numéro de salle clignote : c’est le seul canal pour appeler d’autres ingénieurs. Partagez‑le maintenant. Chaque nouvelle paire d’yeux et de cerveaux augmente vos chances de réparer la chaîne avant l’ultime effondrement.
             </p>
 
             
@@ -90,7 +90,7 @@ export default function Preparation() {
 
             <h4>Choisissez votre avatar</h4>
             <p>
-              Identifiez-vous visuellement pour votre escouade. Selectionnez un avatar pour qu'il s'affiche aupres de vos coequipiers.
+              Identifiez‑vous visuellement pour votre escouade. Sélectionnez un avatar pour qu’il s’affiche auprès de vos coéquipiers.
             </p>
             <div className="avatar-selector">
               {AVATARS.map(({ id, src, label }) => {

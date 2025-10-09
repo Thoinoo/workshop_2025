@@ -108,7 +108,7 @@ export default function Enigme1() {
       </div>
           {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
-              Valider l enigme (debug)
+              Valider l’énigme (debug)
             </button>
           ) : null}
       <div className="game-layout">
@@ -121,9 +121,9 @@ export default function Enigme1() {
             <article className="enigme-post-completion">
               <header className="enigme-post-completion__header">
                 <h3>Bravo !!</h3>
-                <h3>Le Bloc Genesis</h3>
+                <h3>Le bloc Genesis</h3>
                 <p className="enigme-post-completion__subtitle">
-                  Premier bloc du reseau Bitcoin - manifeste technique et politique.
+                  Premier bloc du réseau Bitcoin — manifeste technique et politique.
                 </p>
               </header>
 
@@ -131,23 +131,23 @@ export default function Enigme1() {
                 <section>
                   <h4>Origine</h4>
                   <p>
-                    Cree le 3 janvier 2009 par Satoshi Nakamoto, il lance la chaine et contextualise
-                    la reponse de Bitcoin a la crise financiere.
+                    Créé le 3 janvier 2009 par Satoshi Nakamoto, il lance la chaîne et contextualise
+                    la réponse de Bitcoin à la crise financière.
                   </p>
                 </section>
                 <section>
-                  <h4>Message cache</h4>
+                  <h4>Message caché</h4>
                   <p>
                     <q>The Times 03/Jan/2009 - Chancellor on brink of second bailout for banks.</q>
                     <br />
-                    Une reference explicite a la defiance envers les sauvetages bancaires successifs.
+                    Une référence explicite à la défiance envers les sauvetages bancaires successifs.
                   </p>
                 </section>
                 <section>
-                  <h4>En resume</h4>
+                  <h4>En résumé</h4>
                   <p>
-                    Le Genesis Block symbolise a la fois le demarrage technique de la blockchain et
-                    l ambition d une monnaie sans autorite centrale.
+                    Le bloc Genesis symbolise à la fois le démarrage technique de la blockchain et
+                    l’ambition d’une monnaie sans autorité centrale.
                   </p>
                 </section>
               </div>
@@ -157,12 +157,12 @@ export default function Enigme1() {
           <div className="puzzle-instructions">
             <h3>Briefing</h3>
             <p>
-              Equipe, alerte critique. Le reseau global vient de lever un drapeau rouge : la
-              blockchain universelle est hors service. Sans le Bloc Genesis, aucune transaction ne
-              peut etre verifiee et l historique se desintegre.
+              Équipe, alerte critique. Le réseau global vient de lever un drapeau rouge : la
+              blockchain universelle est hors service. Sans le bloc Genesis, aucune transaction ne
+              peut être vérifiée et l’historique se désintègre.
             </p>
             <p>
-              Trouvez et reparez le block Genesis !
+              Trouvez et réparez le bloc Genesis !
             </p>
             {/* <p>
               Utilisez le terminal et tapez <code>help</code> si besoin. Gardez ces commandes a
@@ -205,7 +205,7 @@ export default function Enigme1() {
                 >
                   Indice 1
                 </button>
-                <span className="enigme-hints__content">le mot "note" semble mis en avant dans le readme, un find [mot] permettrais de mettre en avant certains fichier peut etre</span>
+                <span className="enigme-hints__content">Le mot « note » semble mis en avant dans le README ; un find [mot] permettrait de mettre en avant certains fichiers, peut‑être.</span>
               </li>
               <li
                 className={`enigme-hints__item ${openedHints[1] ? "is-open" : ""}`}
@@ -218,7 +218,7 @@ export default function Enigme1() {
                 >
                   Indice 2
                 </button>
-                <span className="enigme-hints__content">genesis/genesis_note2.enc semble encode, et si on essayait de le dechiffrer ?</span>
+                <span className="enigme-hints__content">genesis/genesis_note2.enc semble encodé, et si on essayait de le déchiffrer ?</span>
               </li>
               <li
                 className={`enigme-hints__item ${openedHints[2] ? "is-open" : ""}`}
@@ -231,7 +231,7 @@ export default function Enigme1() {
                 >
                   Indice 3
                 </button>
-                <span className="enigme-hints__content">Des mots ressortent apres avoir dechiffre genesis_note2.enc. Un find -il [mot] sur l un de ces indices devrait pointer vers le fichier a traiter et a reparer, peut etre avec un de vos outils !.</span>
+                <span className="enigme-hints__content">Des mots ressortent après avoir déchiffré genesis_note2.enc. Un find -il [mot] sur l’un de ces indices devrait pointer vers le fichier à traiter et à réparer, peut‑être avec un de vos outils !</span>
               </li>
             </ul>
           </div>
@@ -252,8 +252,8 @@ export default function Enigme1() {
       {pendingHint !== null ? (
         <div className="hint-purchase-backdrop">
           <div className="hint-purchase-modal">
-            <h4>Debloquer l'indice {pendingHint + 1}</h4>
-            <p>Depenser {HINT_COST} BTC pour reveler cet indice ?</p>
+            <h4>Débloquer l’indice {pendingHint + 1}</h4>
+            <p>Dépenser {HINT_COST} BTC pour révéler cet indice ?</p>
             <div className="hint-purchase-actions">
               <button type="button" className="game-primary" onClick={handleConfirmHintPurchase}>
                 Payer {HINT_COST} BTC

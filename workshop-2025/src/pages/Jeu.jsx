@@ -8,16 +8,16 @@ import useRoomState from "../hooks/useRoomState";
 import EnigmesGridMenu from "../components/EnigmesGrid";
 import ToolsMenu from "../components/ToolsMenu";
 
-const TITLE_TEXT = "ALERTE CRITIQUE - Effondrement du systeme blockchain universel !";
+const TITLE_TEXT = "ALERTE CRITIQUE — Effondrement du système blockchain universel !";
 
 const MESSAGE_TEXT = [
-  "Ingenieurs du futur, vous etes notre derniere ligne de defense numerique.",
-  "Le coeur du reseau mondial de la blockchain vient d'imploser : des blocs entiers ont disparu, d'autres sont corrompus par une anomalie inconnue.",
-  "Les transactions s'effacent une a une, les cryptomonnaies fondent dans le neant. Si rien n'est fait, la confiance numerique mondiale s'effondrera.",
-  "Votre mission : reconstruire la blockchain, bloc apres bloc. Chaque enigme que vous resolvez restaure son architecture : le genesis block, les liens cryptographiques, le consensus du reseau, et enfin la cle maitresse.",
-  "Reussissez et vous sauverez l'economie numerique mondiale. Echouez et tout deviendra poussiere de donnees.",
-  "Le compte a rebours est lance. Reparez la blockchain. Retablissez la confiance. Sauvez le futur.",
-  "Cliquez sur la selection des enigmes en haut a gauche pour commencer !",
+  "Ingénieurs du futur, vous êtes notre dernière ligne de défense numérique.",
+  "Le cœur du réseau mondial de la blockchain vient d’imploser : des blocs entiers ont disparu, d’autres sont corrompus par une anomalie inconnue.",
+  "Les transactions s’effacent une à une, les cryptomonnaies fondent dans le néant. Si rien n’est fait, la confiance numérique mondiale s’effondrera.",
+  "Votre mission : reconstruire la blockchain, bloc après bloc. Chaque énigme que vous résolvez restaure son architecture : le bloc Genesis, les liens cryptographiques, le consensus du réseau, et enfin la clé maîtresse.",
+  "Réussissez et vous sauverez l’économie numérique mondiale. Échouez et tout deviendra poussière de données.",
+  "Le compte à rebours est lancé. Réparez la blockchain. Rétablissez la confiance. Sauvez le futur.",
+  "Cliquez sur la sélection des énigmes en haut à gauche pour commencer !",
 ].join("\n\n");
 
 const TYPE_SPEED_TITLE = 35;
@@ -113,7 +113,7 @@ export default function Jeu() {
         </div>
         <div className="game-header-section game-header-section--actions">
           <button className="game-secondary" onClick={() => navigate("/")}>
-            Retour a l'accueil
+            Retour à l’accueil
           </button>
         </div>
       </header>

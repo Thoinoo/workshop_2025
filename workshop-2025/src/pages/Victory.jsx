@@ -261,7 +261,7 @@ export default function Victory() {
           </div>
 
           <div className="victory-players">
-            <h2 className="victory-players__title">Equipes ayant participe</h2>
+            <h2 className="victory-players__title">Équipes ayant participé</h2>
             <div className="victory-avatars">
               {players && players.length ? (
                 players.map((player, index) => {
@@ -283,7 +283,7 @@ export default function Victory() {
                   );
                 })
               ) : (
-                <p className="victory-avatars__empty">Les agents se deconnectent...</p>
+                <p className="victory-avatars__empty">Les agents se déconnectent…</p>
               )}
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function Victory() {
               <p className="leaderboard__error">{leaderboardError}</p>
             ) : null}
             {leaderboardLoading ? (
-              <p className="leaderboard__loading">Chargement du classement...</p>
+              <p className="leaderboard__loading">Chargement du classement…</p>
             ) : null}
             {!leaderboardLoading && !leaderboardError ? (
               leaderboard.length ? (
@@ -336,7 +336,7 @@ export default function Victory() {
                   ) : null}
                 </>
               ) : (
-                <p className="leaderboard__empty">Pas encore de mission enregistree.</p>
+                <p className="leaderboard__empty">Pas encore de mission enregistrée.</p>
               )
             ) : null}
           </div>

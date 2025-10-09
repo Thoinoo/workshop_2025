@@ -330,7 +330,7 @@ export default function Enigme2() {
 
       <div className="game-layout">
         <section className="game-card puzzle-content">
-          <h2>Enigme 2</h2>
+          <h2>Énigme 2</h2>
           {isCompleted ? (
             <div className="enigme-post-completion">
               Ajouter ici les informations post reussite de l enigme
