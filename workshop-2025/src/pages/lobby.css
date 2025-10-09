@@ -530,9 +530,9 @@ body {
 .game-secondary {
 
   border-radius: 999px;
-  padding: 0.8rem 1.6rem;
+  padding: 1rem 2.25rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   border: none;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -1236,10 +1236,10 @@ body {
 .home-toggle__option {
   border: none;
   background: transparent;
-  padding: 0.4rem 1.1rem;
+  padding: 0.65rem 1.6rem;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.98rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(226, 232, 240, 0.6);

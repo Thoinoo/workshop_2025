@@ -20,7 +20,7 @@ const joinPlayers = (players) =>
 export default function Accueil() {
   const navigate = useNavigate();
   const [pseudo, setPseudo] = useState("");
-  const [mode, setMode] = useState(MODE_JOIN);
+  const [mode, setMode] = useState(MODE_CREATE);
   const [joinRoom, setJoinRoom] = useState("");
   const [createRoom, setCreateRoom] = useState(() => generateRoomCode());
   const [leaderboard, setLeaderboard] = useState([]);
@@ -124,8 +124,7 @@ export default function Accueil() {
         <div className="game-header-section game-header-section--info">
           <p className="game-room">CRYPTO BREAKDOWN</p>
           <p className="game-username">
-            Choisissez votre couverture d'agent, puis creez une nouvelle mission ou rejoignez votre
-            equipe pour la lancer.
+            Sauvez la Blockchain !
           </p>
         </div>
         <div className="game-header-section game-header-section--actions">
