@@ -341,31 +341,27 @@ export default function Enigme3() {
                 <h3>Bravo !!</h3>
                 <h3>Cryptex : les clés perdues</h3>
                 <p className="enigme-post-completion__subtitle">
-                  Premier bloc du réseau Bitcoin — manifeste technique et politique.
+                  Troisième bloc du réseau Bitcoin — manifeste technique et politique.
                 </p>
               </header>
 
               <div className="enigme-post-completion__grid">
                 <section>
-                  <h4>Origine</h4>
+                  <h4>Keys</h4>
                   <p>
-                    Créé le 3 janvier 2009 par Satoshi Nakamoto, il lance la chaîne et contextualise
-                    la réponse de Bitcoin à la crise financière.
+                    2009 – Bitcoin introduit l’usage des clés publiques et privées, permettant aux utilisateurs de signer et sécuriser leurs transactions sur la blockchain.
                   </p>
                 </section>
                 <section>
-                  <h4>Message caché</h4>
+                  <h4>Wallets</h4>
                   <p>
-                    <q>The Times 03/Jan/2009 - Chancellor on brink of second bailout for banks.</q>
-                    <br />
-                    Une référence explicite à la défiance envers les sauvetages bancaires successifs.
+                    2011 – Les wallets (portefeuilles numériques) Bitcoin commencent à se populariser, permettant aux utilisateurs de stocker et gérer leurs cryptomonnaies de manière sécurisée.
                   </p>
                 </section>
                 <section>
-                  <h4>En résumé</h4>
+                  <h4>Noeuds</h4>
                   <p>
-                    Le bloc Genesis symbolise à la fois le démarrage technique de la blockchain et
-                    l’ambition d’une monnaie sans autorité centrale.
+                    2013 – Le nombre de nœuds Bitcoin dépasse les 10 000, illustrant la croissance mondiale et la résilience du réseau décentralisé.
                   </p>
                 </section>
               </div>
