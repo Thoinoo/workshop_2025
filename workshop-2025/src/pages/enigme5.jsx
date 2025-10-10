@@ -25,10 +25,18 @@ export default function Enigme5() {
  
   const [helpPenalty, setHelpPenalty] = useState(0);
 
-
-  const handleHelpUsed = useCallback(() => {
-    setHelpPenalty((prev) => prev + 500);
-  }, []);
+  const handleHelpUsed = useCallback(
+    ({ totalPenaltySeconds, delta } = {}) => {
+      setHelpPenalty((previous) => {
+        if (Number.isFinite(totalPenaltySeconds)) {
+          return totalPenaltySeconds;
+        }
+        const increment = Number.isFinite(delta) ? delta * 500 : 500;
+        return previous + increment;
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     if (!missionStarted && !missionFailed) {
@@ -113,6 +121,7 @@ export default function Enigme5() {
 
           {}
           <MiningStepsGame
+            room={room}
             onComplete={handlePuzzleComplete}
             onHelpUsed={handleHelpUsed}
             disabled={puzzleSolved}

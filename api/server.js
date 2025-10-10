@@ -47,6 +47,16 @@ const buildInitialEnigme2State = () => ({
 const ENIGME2_NODE_ID_SET = new Set(ENIGME2_NODE_IDS);
 const ENIGME2_SPECIAL_ENDPOINTS_SET = new Set(ENIGME2_SPECIAL_ENDPOINTS);
 
+const ENIGME5_GRID_ROWS = 5;
+const ENIGME5_GRID_COLUMNS = 5;
+const ENIGME5_TOTAL_PIECES = ENIGME5_GRID_ROWS * ENIGME5_GRID_COLUMNS;
+const ENIGME5_PREVIEW_DURATION_MS = 5_000;
+const ENIGME5_INITIAL_TIMER_SECONDS = 120;
+const ENIGME5_HELP_DURATION_SECONDS = 20;
+const ENIGME5_HELP_COST_SECONDS = 20;
+const ENIGME5_HELP_GLOBAL_PENALTY = 500;
+const ENIGME5_FRIEND_HELP_BONUS_SECONDS = 15;
+
 const buildInitialEnigme4State = () => ({
   foundKeys: [],
   wrongCells: [],
@@ -60,6 +70,41 @@ const buildInitialEnigme3State = () => ({
   completed: false
 });
 
+const buildInitialEnigme5State = (now = Date.now()) => ({
+  pieces: Array.from({ length: ENIGME5_TOTAL_PIECES }, (_, index) => index),
+  phase: 'preview',
+  previewEndsAt: null,
+  gameDeadline: null,
+  helpActiveUntil: null,
+  helpUses: 0,
+  solvedAt: null,
+  lastShuffleAt: null,
+  lastUpdate: now
+});
+
+const shufflePieces = (input) => {
+  const arr = [...input];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const generateShuffledPieces = () => {
+  const base = Array.from({ length: ENIGME5_TOTAL_PIECES }, (_, index) => index);
+  let candidate = shufflePieces(base);
+  if (isPuzzleSolved(candidate)) {
+    candidate = shufflePieces(candidate);
+  }
+  return candidate;
+};
+
+const isPuzzleSolved = (pieces) =>
+  Array.isArray(pieces) &&
+  pieces.length === ENIGME5_TOTAL_PIECES &&
+  pieces.every((value, index) => value === index);
+
 let rooms = {}; // { roomNumber: { players: [{ username, avatar, scene, terminalRole }], messages: [], timer: { remaining, interval, started }, enigmes: {}, startedAt: number|null, missionSummary?: { elapsedSeconds, completedAt }, missionFailed: boolean, tools: { [toolId]: { holder: string|null } }, terminalRoles: { [username]: 'operator'|'observer' }, terminal: { sharedInput: string, history: Array<{ command: string, outputs: string[] }> } } }
 
 const ensureRoom = (roomName) => {
@@ -72,6 +117,7 @@ const ensureRoom = (roomName) => {
       enigme2: buildInitialEnigme2State(),
       enigme3: buildInitialEnigme3State(),
       enigme4: buildInitialEnigme4State(),
+      enigme5: buildInitialEnigme5State(),
       startedAt: null,
       missionSummary: null,
       missionFailed: false,
@@ -98,6 +144,10 @@ const ensureRoom = (roomName) => {
 
   if (!rooms[roomName].enigme4) {
     rooms[roomName].enigme4 = buildInitialEnigme4State();
+  }
+
+  if (!rooms[roomName].enigme5) {
+    rooms[roomName].enigme5 = buildInitialEnigme5State();
   }
 
   return rooms[roomName];
@@ -399,6 +449,108 @@ const emitEnigme4State = (roomName, { targetSocket = null } = {}) => {
   }
 };
 
+const getEnigme5State = (roomState) => {
+  if (!roomState) {
+    return buildInitialEnigme5State();
+  }
+  if (!roomState.enigme5 || typeof roomState.enigme5 !== 'object') {
+    roomState.enigme5 = buildInitialEnigme5State();
+  }
+  return roomState.enigme5;
+};
+
+const resetEnigme5State = (roomState) => {
+  if (!roomState) {
+    return;
+  }
+  roomState.enigme5 = buildInitialEnigme5State();
+};
+
+const normalizeEnigme5State = (enigme5State, now = Date.now()) => {
+  if (!enigme5State) {
+    return buildInitialEnigme5State(now);
+  }
+
+  const timestamp = Number.isFinite(now) ? now : Date.now();
+
+  if (enigme5State.phase === 'preview' && !Number.isFinite(enigme5State.previewEndsAt)) {
+    enigme5State.previewEndsAt = timestamp + ENIGME5_PREVIEW_DURATION_MS;
+    enigme5State.lastUpdate = timestamp;
+  }
+
+  if (
+    enigme5State.helpActiveUntil &&
+    Number.isFinite(enigme5State.helpActiveUntil) &&
+    timestamp >= enigme5State.helpActiveUntil
+  ) {
+    enigme5State.helpActiveUntil = null;
+  }
+
+  if (enigme5State.phase === 'preview' && enigme5State.previewEndsAt <= timestamp) {
+    enigme5State.phase = 'active';
+    enigme5State.pieces = generateShuffledPieces();
+    enigme5State.gameDeadline = timestamp + ENIGME5_INITIAL_TIMER_SECONDS * 1000;
+    enigme5State.lastShuffleAt = timestamp;
+    enigme5State.lastUpdate = timestamp;
+  }
+
+  if (enigme5State.phase === 'active') {
+    if (!Number.isFinite(enigme5State.gameDeadline)) {
+      enigme5State.gameDeadline = timestamp + ENIGME5_INITIAL_TIMER_SECONDS * 1000;
+      enigme5State.lastShuffleAt = enigme5State.lastShuffleAt ?? timestamp;
+      enigme5State.lastUpdate = timestamp;
+    } else if (timestamp >= enigme5State.gameDeadline) {
+      enigme5State.pieces = generateShuffledPieces();
+      enigme5State.gameDeadline = timestamp + ENIGME5_INITIAL_TIMER_SECONDS * 1000;
+      enigme5State.lastShuffleAt = timestamp;
+      enigme5State.lastUpdate = timestamp;
+    }
+  }
+
+  if (enigme5State.phase === 'solved') {
+    enigme5State.helpActiveUntil = null;
+    enigme5State.gameDeadline = null;
+    enigme5State.previewEndsAt = null;
+  }
+
+  return enigme5State;
+};
+
+const snapshotEnigme5State = (enigme5State, now = Date.now()) => ({
+  pieces: Array.isArray(enigme5State?.pieces) ? [...enigme5State.pieces] : [],
+  phase: enigme5State?.phase ?? 'preview',
+  previewEndsAt: enigme5State?.previewEndsAt ?? null,
+  gameDeadline: enigme5State?.gameDeadline ?? null,
+  helpActiveUntil: enigme5State?.helpActiveUntil ?? null,
+  helpUses: Number.isFinite(enigme5State?.helpUses) ? enigme5State.helpUses : 0,
+  helpPenaltySeconds:
+    (Number.isFinite(enigme5State?.helpUses) ? enigme5State.helpUses : 0) *
+    ENIGME5_HELP_GLOBAL_PENALTY,
+  solvedAt: enigme5State?.solvedAt ?? null,
+  lastShuffleAt: enigme5State?.lastShuffleAt ?? null,
+  serverTimestamp: now,
+  config: {
+    previewDurationMs: ENIGME5_PREVIEW_DURATION_MS,
+    helpDurationSeconds: ENIGME5_HELP_DURATION_SECONDS,
+    helpCostSeconds: ENIGME5_HELP_COST_SECONDS,
+    initialTimerSeconds: ENIGME5_INITIAL_TIMER_SECONDS,
+    friendHelpBonusSeconds: ENIGME5_FRIEND_HELP_BONUS_SECONDS,
+    globalHelpPenaltySeconds: ENIGME5_HELP_GLOBAL_PENALTY
+  }
+});
+
+const emitEnigme5State = (roomName, { targetSocket = null } = {}) => {
+  const roomState = ensureRoom(roomName);
+  const enigme5State = normalizeEnigme5State(getEnigme5State(roomState));
+  const payload = snapshotEnigme5State(enigme5State);
+  if (targetSocket) {
+    targetSocket.emit('enigme5:state', payload);
+  } else {
+    io.to(roomName).emit('enigme5:state', payload);
+  }
+  return payload;
+};
+
 const appendSystemMessage = (roomName, message) => {
   const sanitizedMessage = typeof message === 'string' ? message : '';
   if (!sanitizedMessage.trim()) {
@@ -423,6 +575,27 @@ const updateEnigmeStatusForRoom = (roomName, key, completed) => {
   if (normalizedKey === 'enigme4') {
     const enigme4State = getEnigme4State(roomState);
     enigme4State.completed = Boolean(completed);
+  }
+  if (normalizedKey === 'enigme5') {
+    const enigme5State = getEnigme5State(roomState);
+    if (completed) {
+      enigme5State.phase = 'solved';
+      enigme5State.solvedAt = Date.now();
+      enigme5State.helpActiveUntil = null;
+      enigme5State.gameDeadline = null;
+      if (!isPuzzleSolved(enigme5State.pieces)) {
+        enigme5State.pieces = Array.from({ length: ENIGME5_TOTAL_PIECES }, (_, index) => index);
+      }
+    } else {
+      enigme5State.phase = 'preview';
+      enigme5State.solvedAt = null;
+      enigme5State.previewEndsAt = null;
+      enigme5State.gameDeadline = null;
+      enigme5State.helpActiveUntil = null;
+      enigme5State.helpUses = 0;
+      enigme5State.lastShuffleAt = null;
+      enigme5State.pieces = Array.from({ length: ENIGME5_TOTAL_PIECES }, (_, index) => index);
+    }
   }
   roomState.enigmes[normalizedKey] = Boolean(completed);
   const enigmeStatuses = Object.values(roomState.enigmes);
@@ -917,6 +1090,161 @@ io.on('connection', (socket) => {
     emitEnigme4State(trimmedRoom);
   });
 
+  socket.on('enigme5:requestState', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    const fallback = snapshotEnigme5State(buildInitialEnigme5State());
+
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback(fallback);
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme5State = normalizeEnigme5State(getEnigme5State(roomState));
+    const snapshot = snapshotEnigme5State(enigme5State);
+
+    if (typeof callback === 'function') {
+      callback(snapshot);
+    } else {
+      socket.emit('enigme5:state', snapshot);
+    }
+  });
+
+  socket.on('enigme5:swapPieces', ({ room, sourceIndex, targetIndex } = {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      return;
+    }
+
+    const from = Number(sourceIndex);
+    const to = Number(targetIndex);
+    if (!Number.isInteger(from) || !Number.isInteger(to)) {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+    if (from === to) {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme5State = normalizeEnigme5State(getEnigme5State(roomState));
+
+    if (enigme5State.phase !== 'active') {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    const now = Date.now();
+    const pieces = Array.isArray(enigme5State.pieces) ? enigme5State.pieces : [];
+    if (
+      from < 0 ||
+      from >= pieces.length ||
+      to < 0 ||
+      to >= pieces.length ||
+      !Number.isInteger(from) ||
+      !Number.isInteger(to)
+    ) {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      return;
+    }
+
+    [pieces[from], pieces[to]] = [pieces[to], pieces[from]];
+    enigme5State.lastUpdate = now;
+
+    if (isPuzzleSolved(pieces)) {
+      enigme5State.phase = 'solved';
+      enigme5State.solvedAt = now;
+      enigme5State.helpActiveUntil = null;
+      enigme5State.gameDeadline = null;
+      updateEnigmeStatusForRoom(trimmedRoom, 'enigme5', true);
+      emitEnigme5State(trimmedRoom);
+      io.to(trimmedRoom).emit('enigme5:solved');
+    } else {
+      emitEnigme5State(trimmedRoom);
+    }
+  });
+
+  socket.on('enigme5:requestHelp', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'invalid_room' });
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme5State = normalizeEnigme5State(getEnigme5State(roomState));
+    const now = Date.now();
+
+    if (enigme5State.phase !== 'active') {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'inactive' });
+      }
+      return;
+    }
+
+    enigme5State.helpUses = Number.isFinite(enigme5State.helpUses) ? enigme5State.helpUses + 1 : 1;
+    const helpDurationMs = ENIGME5_HELP_DURATION_SECONDS * 1000;
+    enigme5State.helpActiveUntil = now + helpDurationMs;
+    enigme5State.lastUpdate = now;
+
+    if (Number.isFinite(enigme5State.gameDeadline)) {
+      enigme5State.gameDeadline -= ENIGME5_HELP_COST_SECONDS * 1000;
+      if (!Number.isFinite(enigme5State.gameDeadline) || enigme5State.gameDeadline < now) {
+        enigme5State.gameDeadline = now;
+      }
+    } else {
+      enigme5State.gameDeadline = now + (ENIGME5_INITIAL_TIMER_SECONDS - ENIGME5_HELP_COST_SECONDS) * 1000;
+    }
+
+    const snapshot = emitEnigme5State(trimmedRoom);
+
+    if (typeof callback === 'function') {
+      callback({ ok: true, state: snapshot });
+    }
+  });
+
+  socket.on('enigme5:friendHelpSuccess', ({ room } = {}, callback = () => {}) => {
+    const trimmedRoom = (room ?? '').trim();
+    if (!trimmedRoom) {
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'invalid_room' });
+      }
+      return;
+    }
+
+    const roomState = ensureRoom(trimmedRoom);
+    const enigme5State = normalizeEnigme5State(getEnigme5State(roomState));
+    const now = Date.now();
+
+    if (enigme5State.phase !== 'active') {
+      emitEnigme5State(trimmedRoom, { targetSocket: socket });
+      if (typeof callback === 'function') {
+        callback({ ok: false, error: 'inactive' });
+      }
+      return;
+    }
+
+    const bonusMs = ENIGME5_FRIEND_HELP_BONUS_SECONDS * 1000;
+    if (Number.isFinite(enigme5State.gameDeadline)) {
+      enigme5State.gameDeadline += bonusMs;
+    } else {
+      enigme5State.gameDeadline = now + ENIGME5_INITIAL_TIMER_SECONDS * 1000 + bonusMs;
+    }
+    enigme5State.lastUpdate = now;
+
+    const snapshot = emitEnigme5State(trimmedRoom);
+
+    if (typeof callback === 'function') {
+      callback({ ok: true, state: snapshot });
+    }
+  });
+
   socket.on('startMission', ({ room }) => {
     const trimmedRoom = (room ?? '').trim();
     if (!trimmedRoom) {
@@ -932,11 +1260,13 @@ io.on('connection', (socket) => {
     resetEnigme2State(roomState);
     resetEnigme3State(roomState);
     resetEnigme4State(roomState);
+    resetEnigme5State(roomState);
     broadcastPlayersUpdate(trimmedRoom);
     emitTerminalState(trimmedRoom);
     emitEnigme2State(trimmedRoom);
     emitEnigme3State(trimmedRoom);
     emitEnigme4State(trimmedRoom);
+    emitEnigme5State(trimmedRoom);
     io.to(trimmedRoom).emit('missionStarted');
     io.to(trimmedRoom).emit('timerUpdate', timerValue);
   });
@@ -985,6 +1315,7 @@ io.on('connection', (socket) => {
     resetEnigme2State(roomState);
     resetEnigme3State(roomState);
     resetEnigme4State(roomState);
+    resetEnigme5State(roomState);
     io.to(trimmedRoom).emit('missionReset');
     io.to(trimmedRoom).emit('timerUpdate', roomState.timer.remaining);
     io.to(trimmedRoom).emit('enigmesProgressSync', {});
@@ -994,6 +1325,7 @@ io.on('connection', (socket) => {
     emitEnigme2State(trimmedRoom);
     emitEnigme3State(trimmedRoom);
     emitEnigme4State(trimmedRoom);
+    emitEnigme5State(trimmedRoom);
   });
 
   socket.on('terminal:requestState', ({ room } = {}, callback = () => {}) => {
