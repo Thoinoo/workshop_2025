@@ -170,8 +170,7 @@ export default function Enigme4() {
           <p>
             Les clés virtuelles ont disparu. Trouvez-les pour débloquer le wallet. <br />
             Avez-vous été attentifs aux épreuves que vous avez traversées ?<br />
-            <strong>[ATTENTION]</strong> Cliquer sur une mauvaise case augmente la vitesse de
-            réduction de BTC.
+            <strong>[ATTENTION]</strong> une erreur est VITE arrivée...
           </p>
 
           <div className="puzzle-grid">
