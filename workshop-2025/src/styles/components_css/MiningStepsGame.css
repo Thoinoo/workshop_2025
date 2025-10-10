@@ -1,9 +1,10 @@
+
 /* --- CONTAINER --- */
 .mining-steps-game {
   display: flex;
   flex-direction: column;
-  align-items: center; 
-  justify-content: center; 
+  align-items: center;
+  justify-content: center;
   gap: clamp(1rem, 2vw, 1.6rem);
   padding: clamp(1.2rem, 3vw, 2rem);
   border-radius: 22px;
@@ -34,8 +35,11 @@
   text-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
 
+/* --- TEXTES --- */
 .mining-steps-preview,
-.mining-steps-success {
+.mining-steps-success,
+.mining-steps-timer,
+.mining-steps-warning {
   margin: 0;
   font-size: 0.95rem;
   letter-spacing: 0.02em;
@@ -53,11 +57,52 @@
   animation: glowSuccess 1.4s ease-in-out infinite alternate;
 }
 
+/* TIMER PRINCIPAL */
+.mining-steps-timer {
+  color: #38bdf8;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+  padding: 0.3rem 0.8rem;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+}
+
+/* BARRE DE PROGRESSION DU TEMPS */
+.mining-steps-timer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: var(--time-progress, 100%);
+  background: linear-gradient(90deg, #22d3ee, #3b82f6);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+  transition: width 1s linear;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* --- AIDE ACTIVE --- */
+.mining-steps-warning {
+  color: #f87171;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+  background: rgba(127, 29, 29, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  animation: flashWarning 1s infinite alternate;
+}
+
 /* --- PUZZLE BOARD --- */
 .mining-steps-board {
   position: center;
   display: grid;
-  width: min(520px, 100%);
+  width: min(570px, 100%);
   aspect-ratio: 1;
   border-radius: 20px;
   overflow: hidden;
@@ -86,19 +131,10 @@
   border-radius: 4px;
 }
 
-.mining-steps-piece:not(.is-preview):not(.is-solved) {
-  cursor: grab;
-}
-
+/* EFFET SURVOL AJOUTÉ */
 .mining-steps-piece:not(.is-preview):hover {
-  transform: scale(1.06) translateY(-2px);
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.45);
-}
-
-.mining-steps-piece:not(.is-preview):active {
-  cursor: grabbing;
-  transform: scale(1.1) rotateZ(1.5deg);
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.5), 0 0 25px rgba(56, 189, 248, 0.3);
 }
 
 /* --- BORDURES & ÉTATS --- */
@@ -122,13 +158,47 @@
   border-color: rgba(34, 197, 94, 0.7);
   background: rgba(22, 163, 74, 0.2);
   box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+  animation: pulseSolved 1.2s ease-in-out infinite alternate;
 }
 
+/* --- NUMÉROS OU TEXTE --- */
 .mining-steps-piece span {
   position: relative;
   z-index: 1;
   line-height: 1.2;
   font-weight: 500;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(8, 145, 178, 0.5);
+}
+
+/* --- BOUTON AIDE --- */
+.help-button {
+  margin-top: 1.2rem;
+  align-self: center;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.help-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+}
+
+.help-button:disabled {
+  background: #374151;
+  cursor: not-allowed;
+  color: #9ca3af;
+  box-shadow: none;
 }
 
 /* --- ANIMATIONS --- */
@@ -157,6 +227,16 @@
   to { opacity: 1; }
 }
 
+@keyframes flashWarning {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseSolved {
+  from { box-shadow: 0 0 10px rgba(34, 197, 94, 0.3); }
+  to { box-shadow: 0 0 25px rgba(34, 197, 94, 0.6); }
+}
+
 /* --- RESPONSIVE --- */
 @media (max-width: 640px) {
   .mining-steps-game {
@@ -172,36 +252,40 @@
   }
 }
 
-.mining-steps-warning {
-  color: #f87171;
-  font-weight: 600;
-  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+
+/* Zone latérale du QCM */
+.friend-help-panel {
+  width: 260px;
+  background: #0f172a;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+/* QCM interne */
+.friend-help-question .choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
   margin-top: 0.5rem;
 }
 
-.help-button {
-  margin-top: 1.2rem;
-  align-self: center;
-  padding: 0.6rem 1.2rem;
-  background: linear-gradient(90deg, #f59e0b, #f97316);
+.friend-help-question button {
+  background-color: #1f2937;
   color: #fff;
-  border: none;
-  border-radius: 10px;
+  border: 1px solid #00bcd4;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.help-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+.friend-help-question button:hover {
+  background-color: #00bcd4;
+  color: #000;
 }
 
-.help-button:disabled {
-  background: #374151;
-  cursor: not-allowed;
-  color: #9ca3af;
-  box-shadow: none;
+.friend-help-feedback {
+  margin-top: 0.5rem;
+  font-weight: bold;
+  text-align: center;
 }

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import FriendHelp from "./FriendHelp";
 import "../styles/components_css/MiningStepsGame.css";
 
 const GRID_ROWS = 5;
 const GRID_COLUMNS = 5;
 const TOTAL_PIECES = GRID_ROWS * GRID_COLUMNS;
 const PREVIEW_DURATION_MS = 5_000;
-const HELP_DURATION_MS = 50_000;
+const INITIAL_GAME_TIME = 120;
+const HELP_COST = 20; // Retire 20s
+const HELP_DURATION = 20;
 const IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg";
 
 const STEP_HINTS = [
@@ -43,13 +46,18 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
   const [isPreview, setIsPreview] = useState(true);
   const [dragOriginIndex, setDragOriginIndex] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [timerRemaining, setTimerRemaining] = useState(Math.ceil(PREVIEW_DURATION_MS / 1000));
-  const [isSolved, setIsSolved] = useState(false);
-  const [helpUsed, setHelpUsed] = useState(false);
-  const [helpTimer, setHelpTimer] = useState(null); // pour gérer le timer d’aide
-  const [helpCountdown, setHelpCountdown] = useState(0); // affichage du temps restant
 
-  // 🔀 Mélange les pièces
+  //Timers
+  const [previewTimer, setPreviewTimer] = useState(Math.ceil(PREVIEW_DURATION_MS / 1000));
+  const [gameTime, setGameTime] = useState(INITIAL_GAME_TIME);
+  const [isSolved, setIsSolved] = useState(false);
+
+  //Aide
+  const [helpActive, setHelpActive] = useState(false);
+  const [helpCountdown, setHelpCountdown] = useState(0);
+  const [helpTimer, setHelpTimer] = useState(null);
+
+  // Mélange les pièces
   const shufflePieces = useCallback(() => {
     setPieces((current) => {
       const shuffled = [...current];
@@ -61,51 +69,52 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
     });
   }, []);
 
-  // 🕐 Prévisualisation de 5 secondes
+  // Prévisualisation 5s
   useEffect(() => {
     if (!isPreview || disabled) return;
 
-    const interval = window.setInterval(() => {
-      setTimerRemaining((previous) => {
-        if (previous <= 1) {
-          window.clearInterval(interval);
+    const interval = setInterval(() => {
+      setPreviewTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
           setIsPreview(false);
           shufflePieces();
           return 0;
         }
-        return previous - 1;
+        return prev - 1;
       });
     }, 1000);
 
-    return () => window.clearInterval(interval);
+    return () => clearInterval(interval);
   }, [isPreview, disabled, shufflePieces]);
 
+  // Timer principal — Boucle infinie tant que non résolu
   useEffect(() => {
-    if (!disabled) return;
-    setIsPreview(false);
-    setTimerRemaining(0);
-    setIsSolved(true);
-  }, [disabled]);
+    if (isPreview || isSolved || disabled) return;
 
-  // 🎯 Début du drag
+    const timer = setInterval(() => {
+      setGameTime((prev) => {
+        // Quand le temps atteint 0 → remélange, repart à 100, continue la boucle
+        if (prev <= 1) {
+          shufflePieces();
+          return INITIAL_GAME_TIME;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPreview, isSolved, disabled, shufflePieces]);
+
+  // Début du drag
   const handleDragStart = useCallback((index) => {
     setDragOriginIndex(index);
   }, []);
 
-  // 🧩 Drop d’une pièce
+  // Drop
   const handleDrop = useCallback(
     (targetIndex) => {
-      if (
-        disabled ||
-        dragOriginIndex === null ||
-        targetIndex < 0 ||
-        targetIndex >= pieces.length
-      ) {
-        setDragOriginIndex(null);
-        return;
-      }
-
-      if (dragOriginIndex === targetIndex) {
+      if (disabled || dragOriginIndex === null) {
         setDragOriginIndex(null);
         return;
       }
@@ -117,37 +126,37 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
           updated[targetIndex]
         ];
 
-        const solved = updated.every((value, index) => value === index);
+        const solved = updated.every((v, i) => v === i);
         if (solved) {
           setIsSolved(true);
           if (typeof onComplete === "function") onComplete();
-          // 🔕 Stopper le timer d’aide si le joueur a réussi
-          if (helpTimer) clearInterval(helpTimer);
-          setHelpCountdown(0);
         }
 
         return updated;
       });
+
       setDragOriginIndex(null);
     },
-    [disabled, dragOriginIndex, pieces.length, onComplete, helpTimer]
+    [disabled, dragOriginIndex, onComplete]
   );
 
-  // 🧠 Fonction d’aide
+  // Aide : affiche les numéros 20s et retire 20s du chrono
   const handleHelpClick = () => {
+    if (gameTime <= HELP_COST) return; // pas assez de temps
+
+    // Retire 20s du timer principal
+    setGameTime((t) => Math.max(t - HELP_COST, 0));
+
+    // Active l’aide pendant 20s
+    setHelpActive(true);
+    setHelpCountdown(HELP_DURATION);
+
     if (helpTimer) clearInterval(helpTimer);
-
-    setHelpUsed(true);
-    setHelpCountdown(45); // 45 secondes affichées
-
-    // ⏳ Démarre un compte à rebours de 45 secondes
     const timer = setInterval(() => {
       setHelpCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // 🔁 Si non résolu après 45s, on remélange
-          if (!isSolved) shufflePieces();
-          setHelpUsed(false);
+          setHelpActive(false);
           return 0;
         }
         return prev - 1;
@@ -156,8 +165,16 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
 
     setHelpTimer(timer);
   };
+  const handleCorrectAnswer = () => {
+  setGameTime((prev) => prev + 15);
+};
 
-  // 💡 Layout de la grille
+const handleWrongAnswer = () => {
+  // rien de spécial, le joueur doit recliquer
+};
+
+
+  // Style de la grille
   const boardStyle = useMemo(
     () => ({
       gridTemplateColumns: `repeat(${GRID_COLUMNS}, 1fr)`,
@@ -171,17 +188,30 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
       <header className="mining-steps-header">
         <h3>🪙 Assemblez le cycle du minage</h3>
 
-        {isPreview && !disabled ? (
+        {isPreview && !disabled && (
           <p className="mining-steps-preview">
-            Mettez toutes les étapes dans l'ordre. Mémorisez bien ({timerRemaining}s) ⏳
+            Prévisualisation ({previewTimer}s) ⏳
           </p>
-        ) : null}
+        )}
+
+        {!isPreview && !isSolved && (
+          <p className="mining-steps-timer">
+            ⏱️ Temps restant : {gameTime}s
+          </p>
+        )}
+        {gameTime <= 35 && !isSolved && !isPreview && (
+  <FriendHelp
+    onCorrectAnswer={handleCorrectAnswer}
+    onWrongAnswer={handleWrongAnswer}
+  />
+)}
+
 
         {isSolved && <p className="mining-steps-success">✅ Cycle complet ! Transaction sécurisée.</p>}
 
-        {helpUsed && (
+        {helpActive && (
           <p className="mining-steps-warning">
-            ⚠️ Aide utilisée : pénalité de 500 BTC — {helpCountdown}s restantes pour résoudre !
+            💡 Aide active — {helpCountdown}s restantes
           </p>
         )}
       </header>
@@ -195,7 +225,7 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
         {pieces.map((pieceIndex, index) => {
           const row = Math.floor(pieceIndex / GRID_COLUMNS);
           const column = pieceIndex % GRID_COLUMNS;
-          const showHint = hoveredIndex === index && !isPreview && !helpUsed;
+          const showHint = hoveredIndex === index && !isPreview && !helpActive;
 
           return (
             <div
@@ -210,7 +240,7 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
               role="gridcell"
               draggable={!isPreview && !isSolved && !disabled}
               onDragStart={() => handleDragStart(index)}
-              onDragOver={(event) => event.preventDefault()}
+              onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(index)}
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
@@ -222,15 +252,23 @@ export default function MiningStepsGame({ onComplete, disabled = false }) {
                 }%`
               }}
             >
-              {helpUsed ? <span>{pieceIndex + 1}</span> : showHint && <span>{STEP_HINTS[pieceIndex]}</span>}
+              {helpActive ? (
+                <span>{pieceIndex + 1}</span>
+              ) : (
+                showHint && <span>{STEP_HINTS[pieceIndex]}</span>
+              )}
             </div>
           );
         })}
       </div>
 
-      {!isSolved && (
-        <button className="help-button" onClick={handleHelpClick} disabled={helpUsed}>
-          💡 Demander de l’aide
+      {!isSolved && !isPreview && (
+        <button
+          className="help-button"
+          onClick={handleHelpClick}
+          disabled={helpActive || gameTime <= HELP_COST}
+        >
+          💡 Demander de l’aide (-20s)
         </button>
       )}
     </div>

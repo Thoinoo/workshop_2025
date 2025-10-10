@@ -106,6 +106,30 @@
   outline-offset: 3px;
 }
 
+.bombe-timer__robot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bombe-timer__hint {
+  position: absolute;
+  top: calc(100% + clamp(2.3rem, 1.2vw, 0.45rem));
+  left: 200%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #fb923c;
+  animation: bombe-hint-blink 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.35));
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .bombe-timer__sprite::after {
   content: "";
   position: absolute;
@@ -438,6 +462,16 @@
   }
 }
 
+@keyframes bombe-hint-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
 @keyframes bombe-highlight-pulse {
   from {
     transform: scale(1);
@@ -470,7 +504,8 @@
   .bombe-timer__sprite,
   .bombe__display,
   .bombe__time,
-  .bombe__blast {
+  .bombe__blast,
+  .bombe-timer__hint {
     animation: none !important;
     transition: none !important;
   }
