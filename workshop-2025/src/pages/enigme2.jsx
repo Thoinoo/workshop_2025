@@ -462,11 +462,11 @@ export default function Enigme2() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-          {!isCompleted ? (
+          {/* {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l enigme (debug)
             </button>
-          ) : null}
+          ) : null} */}
         </div>
       </header>
       
@@ -512,10 +512,7 @@ export default function Enigme2() {
       <div className="game-layout">
         <section className="game-card puzzle-content">
           <h2>Énigme 2 - Les noeuds de données</h2><p>
-            La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere securisee.
-          </p>
-          <p>
-            Règle: connectez tous les noeuds 1–10 entre eux sans relier la base corrompue ni les ordinateurs à cette base.
+            La base de donnees est corrompue : trouvez un moyen de stocker les donnees de maniere decentralisée.
           </p>
           <div className="puzzle-instructions">
           <div className="puzzle-instructions-enigme2" ref={containerRef}>

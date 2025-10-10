@@ -117,11 +117,13 @@ export default function Enigme4() {
           </button>
         
         {/* Bouton debug */}
-          {!isCompleted && (
+
+          {/* {!isCompleted && (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l'énigme (debug)
             </button>
-          )}</div>
+          )} */}
+          </div>
       </header>
       <div className="game-timer-sticky">
         <div className="game-header-section game-header-section--timer">

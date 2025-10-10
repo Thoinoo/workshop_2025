@@ -84,11 +84,11 @@ export default function Enigme5() {
           <button className="game-secondary" onClick={() => navigate("/jeu")}>
             Retour au lobby
           </button>
-          {!isCompleted ? (
+          {/* {!isCompleted ? (
             <button type="button" className="game-secondary" onClick={handleDebugComplete}>
               Valider l énigme (debug)
             </button>
-          ) : null}
+          ) : null} */}
         </div>
       </header>
 
