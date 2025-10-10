@@ -8,14 +8,20 @@ const resolvedUrl = (() => {
   }
 
   if (typeof window === "undefined") {
+    // défaut côté build/SSR
     return "http://localhost:3000";
   }
 
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
-  const port = VITE_SOCKET_PORT || "3000";
+  if (VITE_SOCKET_PORT && VITE_SOCKET_PORT.trim()) {
+    const port = VITE_SOCKET_PORT.trim();
+    return `${window.location.protocol}//${window.location.hostname}${port ? `:${port}` : ""}`;
+  }
 
-  return `${protocol}//${hostname}${port ? `:${port}` : ""}`;
+  if (import.meta.env.DEV) {
+    return `${window.location.protocol}//${window.location.hostname}:3000`;
+  }
+
+  return window.location.origin;
 })();
 
 const socket = io(resolvedUrl);

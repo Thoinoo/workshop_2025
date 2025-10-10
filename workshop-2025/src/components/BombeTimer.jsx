@@ -198,23 +198,28 @@ export default function BombeTimer({ remainingSeconds = null }) {
   return (
     <div className="bombe-timer" role="status" aria-live="polite">
       {robotVisible ? (
-        <div
-          className="bombe-timer__sprite bombe-timer__sprite--dismissible"
-          role="button"
-          tabIndex={0}
-          aria-label="Masquer le robot"
-          onClick={handleRobotDismiss}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " " || event.key === "Space") {
-              event.preventDefault();
-              handleRobotDismiss();
-            }
-          }}
-        >
-          <img src={spriteSrc} alt="" />
-          <div className="bombe-timer__btc-fx" aria-hidden="true">
-            - 1&nbsp;BTC
+        <div className="bombe-timer__robot">
+          <div
+            className="bombe-timer__sprite bombe-timer__sprite--dismissible"
+            role="button"
+            tabIndex={0}
+            aria-label="Masquer le robot"
+            onClick={handleRobotDismiss}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " " || event.key === "Space") {
+                event.preventDefault();
+                handleRobotDismiss();
+              }
+            }}
+          >
+            <img src={spriteSrc} alt="" />
+            <div className="bombe-timer__btc-fx" aria-hidden="true">
+              - 1&nbsp;BTC
+            </div>
           </div>
+          <p className="bombe-timer__hint" role="status" aria-live="assertive">
+            click sur le voleur pour le faire fuire&nbsp;!
+          </p>
         </div>
       ) : null}
       <div className={containerClassName}>
