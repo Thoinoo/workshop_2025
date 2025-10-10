@@ -9,6 +9,7 @@ import robotFrame4 from "../assets/robot/robot_frame_4.png";
 const SPRITE_FRAMES = [robotFrame1, robotFrame2, robotFrame3, robotFrame4];
 const SPRITE_FRAME_COUNT = SPRITE_FRAMES.length;
 const ROBOT_RESPAWN_STORAGE_KEY = "bombeTimerRobotRespawnAt";
+const INITIAL_ROBOT_DELAY_MS = 60_000;
 const MIN_ROBOT_RESPAWN_DELAY_MS = 10_000;
 const MAX_ROBOT_RESPAWN_DELAY_MS = 60_000;
 
@@ -35,7 +36,8 @@ export default function BombeTimer({ remainingSeconds = null }) {
   const [randomSuffix, setRandomSuffix] = useState("");
   const [spriteFrame, setSpriteFrame] = useState(0);
   const [robotRespawnAt, setRobotRespawnAt] = useState(initialRespawnAt);
-  const [robotVisible, setRobotVisible] = useState(initialRespawnAt === null);
+  const [robotVisible, setRobotVisible] = useState(false);
+  const [initialDelayScheduled, setInitialDelayScheduled] = useState(() => initialRespawnAt !== null);
   const shouldAnimate = isNumeric && remainingSeconds > 0;
   const shouldAnimateSprite = shouldAnimate && robotVisible;
   const { missionStarted } = useRoomState();
@@ -124,6 +126,48 @@ export default function BombeTimer({ remainingSeconds = null }) {
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!missionStarted) {
+      if (robotRespawnTimeoutRef.current) {
+        window.clearTimeout(robotRespawnTimeoutRef.current);
+        robotRespawnTimeoutRef.current = null;
+      }
+      setRobotVisible(false);
+      setRobotRespawnAt(null);
+      setInitialDelayScheduled(false);
+      window.sessionStorage.removeItem(ROBOT_RESPAWN_STORAGE_KEY);
+      return;
+    }
+
+    if (!initialDelayScheduled) {
+      const missionStart = Number(window.sessionStorage.getItem("missionStartTimestamp"));
+      const missionStartTime = Number.isFinite(missionStart) ? missionStart : Date.now();
+      const firstAppearanceAt = missionStartTime + INITIAL_ROBOT_DELAY_MS;
+
+      if (Date.now() >= firstAppearanceAt) {
+        setRobotVisible(true);
+        setRobotRespawnAt(null);
+        window.sessionStorage.removeItem(ROBOT_RESPAWN_STORAGE_KEY);
+      } else {
+        setRobotRespawnAt(firstAppearanceAt);
+        window.sessionStorage.setItem(ROBOT_RESPAWN_STORAGE_KEY, String(firstAppearanceAt));
+      }
+
+      setInitialDelayScheduled(true);
+      return;
+    }
+
+    if (!robotVisible && robotRespawnAt !== null && robotRespawnAt <= Date.now()) {
+      setRobotVisible(true);
+      setRobotRespawnAt(null);
+      window.sessionStorage.removeItem(ROBOT_RESPAWN_STORAGE_KEY);
+    }
+  }, [missionStarted, initialDelayScheduled, robotRespawnAt, robotVisible]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !missionStarted) {
       return () => {};
     }
 
@@ -164,7 +208,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
         robotRespawnTimeoutRef.current = null;
       }
     };
-  }, [robotVisible, robotRespawnAt, setRobotRespawnAt]);
+  }, [missionStarted, robotVisible, robotRespawnAt, setRobotRespawnAt]);
 
   useEffect(() => {
     return () => {
@@ -218,7 +262,7 @@ export default function BombeTimer({ remainingSeconds = null }) {
             </div>
           </div>
           <p className="bombe-timer__hint" role="status" aria-live="assertive">
-            click sur le voleur pour le faire fuire&nbsp;!
+            clique sur le voleur pour le faire fuire&nbsp;!
           </p>
         </div>
       ) : null}
